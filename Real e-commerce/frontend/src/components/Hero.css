@@ -1,0 +1,83 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+
+.hero-container {
+    background-color: #fbfbfa;
+    padding: 50px 20px;
+    text-align: center;
+    font-family: 'Arial, sans-serif';
+    color: #040404;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 6;
+    width: 80vw;
+    margin-left: 8.5vw;
+    border: 1px solid #f7f6f6;
+}
+.hero-text {
+    flex: 1;
+    padding: 20px;
+}
+.hero-text h1 {
+    font-size: 68px;
+    margin-bottom: 20px;
+
+    font-weight: 700;
+}
+.hero-text p {
+    font-size: 22px;
+    margin-bottom: 30px;
+
+}
+.hero-text button {
+    padding: 15px 30px;
+    font-size: 16px;
+    color: white;
+    background-color: #ff5733;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.hero-text button:hover {
+    background-color: #e74c3c;
+}
+.hero-img {
+    width: 30vw;
+    height: 40vh;
+    object-fit: cover;
+}
+
+
+.left-hero {
+    width: 50%;
+    float: left;
+    text-align: left;
+}
+.right-hero {
+    width: 50%;
+    float: right;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .hero-container {
+        flex-direction: column;
+        height: auto;
+    }
+    .hero-text, .hero-image {
+        padding: 10px;
+    }
+    .hero-text h1 {
+        font-size: 36px;
+    }
+    .hero-text p {
+        font-size: 16px;
+    }
+    .hero-text button {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}

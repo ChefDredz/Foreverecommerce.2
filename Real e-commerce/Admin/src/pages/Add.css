@@ -1,0 +1,199 @@
+/* .form-container{
+    width: 80vw;
+    height: 95vh;
+    align-items: center;
+    
+    margin-left: 22vw;
+    margin-top: -100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+}
+
+
+
+
+.upload-img{
+    width: 7vw;
+    object-fit: cover;
+    
+}
+
+.admin-form-details-container{
+    margin-left: 22vw;
+    margin-top: -70vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: -5px;
+}
+
+.long-box{
+    width: 60vw;
+    height: 14vh;
+}
+
+.long-box p{
+    font-size: 20px;
+    font-weight: 500;
+    font-family: 'Outfit';
+}
+
+.long-box input{
+    width: 60vw;
+    height: 4vh;
+    border-radius: 5px;
+}
+.long-box textarea{
+    width: 60vw;
+    height: 7vh;
+    border-radius: 5px;
+}
+
+.select-flexbox {
+    width: 60vw;
+    height: 10vh;
+    display: flex;
+    flex-direction: row;
+    gap: 4vw;
+    justify-content: left;
+    margin-top: 1vh;
+    
+}
+
+.select-box{
+    width: 10vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    height: 10vh;
+}
+
+.select-box p{
+    font-size: 18px;
+    font-weight: 500;
+    font-family: 'Outfit';
+
+}
+
+.select-box select{
+    width: 10vw;
+    border: 1px solid #000;
+    height: 4vh;
+    
+}
+
+.size-container{
+    width: 60vw;
+    height: 17vh;
+   
+    margin-top: 1vh;
+}
+
+.size-container p{
+    font-size: 18px;
+    font-weight: 500;
+    font-family: 'Outfit';
+
+}
+
+.sizes-flex-box{
+     width: 60vw;
+    height: 17vh;
+    display: flex;
+    flex-direction: row;
+    gap: 4vw;
+    justify-content: left;
+    margin-top: 2vh;
+}
+
+.size-card{
+    width: 4vw;
+    height: 4vh;
+    border: 1px solid #000;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    background-color: rgb(199, 198, 198);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.checkbox-container{
+    margin-left: 30vw;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+}
+
+.checkbox-container label{
+    margin-left: 2vw;
+}
+
+
+button{
+    width: 15vw;
+    height: 5vh;
+    border-radius: 10px;
+    color: #fff;
+    background-color: rgb(8, 8, 8);
+    margin-left: 33vw;
+    margin-top: 3vh;
+}
+button:hover{
+color: #000;
+    background-color: #fff;
+    cursor: pointer;
+} */
+
+
+.form-container {
+  margin-left: 3vw; /* space for sidebar */
+   margin-top:5vh ;
+  padding: 20px;
+  background: #fdfdfd;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  max-width: 90vw;
+}
+
+.label-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.upload-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px dashed #bbb;
+  transition: 0.3s ease;
+}
+
+.upload-img:hover {
+  border-color: #007bff;
+}
+
+.add-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.submit-btn {
+  background: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.submit-btn:hover {
+  background: #0056b3;
+}

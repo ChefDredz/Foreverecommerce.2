@@ -1,0 +1,36 @@
+.carttotal-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 20vw;
+    height: auto;
+}
+
+.cart-total-mini{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 20vw;
+    height: auto;
+    margin-left: 8vw;
+    
+}
+
+.sub-total{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    border-bottom: 1px solid#000;
+}
+
+.sub-total b {
+    margin-left: 1vw;
+}
+.sub-total p {
+    margin:10px;
+    font-size: 15px;
+}
+
+.title-box{
+    width: 20vw;
+}
