@@ -9,6 +9,30 @@ import orderRouter from './routes/OrderRoute.js';
 import mpesaRouter from './routes/MpesaRoute.js'; // NEW
 import notificationRouter from './routes/NotificationRoute.js'; // NEW
 
+import cors from 'cors';
+
+// Allow your Vercel frontend domains
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://foreverecommerce-2-gae4.vercel.app',
+  'https://foreverecommerce-2.vercel.app',
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 
 
 // App config 
