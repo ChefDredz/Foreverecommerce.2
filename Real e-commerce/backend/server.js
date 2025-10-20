@@ -9,7 +9,6 @@ import orderRouter from './routes/OrderRoute.js';
 import mpesaRouter from './routes/MpesaRoute.js'; // NEW
 import notificationRouter from './routes/NotificationRoute.js'; // NEW
 
-import cors from 'cors';
 
 // Allow your Vercel frontend domains
 const allowedOrigins = [
