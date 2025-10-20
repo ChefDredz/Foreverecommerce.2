@@ -10,7 +10,6 @@
     "start": "node server.js"
     
     
-    
   },
   "dependencies": {
     "@clerk/backend": "^2.18.0",
