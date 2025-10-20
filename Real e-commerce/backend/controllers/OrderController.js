@@ -98,13 +98,23 @@ export const createOrder = async (req, res) => {
 // Get all orders (Admin only)
 export const getAllOrders = async (req, res) => {
   try {
-    // Check if user is admin
-    const userRole = req.user?.role || req.user?.metadata?.role || req.user?.publicMetadata?.role;
+    // Check multiple possible locations for admin role
+    const userRole = req.user?.role || 
+                     req.user?.metadata?.role || 
+                     req.user?.publicMetadata?.role ||
+                     req.user?.public_metadata?.role;
+    
+    console.log('🔍 User role check:', {
+      role: userRole,
+      fullPayload: req.user
+    });
     
     if (userRole !== 'admin') {
+      console.log('❌ Access denied. Role:', userRole);
       return res.status(403).json({
         success: false,
-        message: "Access denied. Admin only."
+        message: "Access denied. Admin only.",
+        debug: { userRole, available: !!req.user }
       });
     }
 

@@ -8,6 +8,7 @@ import productRouter from './routes/ProductRoute.js'
 import orderRouter from './routes/OrderRoute.js';
 import mpesaRouter from './routes/MpesaRoute.js'; // NEW
 import notificationRouter from './routes/NotificationRoute.js'; // NEW
+import { verifyClerkToken } from './middleware/verifyClerkToken.js';
 
 
 
@@ -42,7 +43,14 @@ app.use(cors({
   credentials: true
 }));
 
-
+app.get('/api/debug/me', verifyClerkToken, (req, res) => {
+  res.json({
+    user: req.user,
+    userId: req.userId,
+    role: req.user?.role || req.user?.publicMetadata?.role,
+    fullPayload: req.user
+  });
+});
 
 // middlewares
 
