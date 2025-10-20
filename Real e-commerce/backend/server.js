@@ -52,6 +52,33 @@ app.get('/api/debug/me', verifyClerkToken, (req, res) => {
   });
 });
 
+
+
+import { verifyClerkToken } from './middleware/verifyClerkToken.js';
+
+// Debug endpoint - ADD THIS
+app.get('/api/debug/check-role', verifyClerkToken, (req, res) => {
+  const userRole = req.user?.role || 
+                   req.user?.metadata?.role || 
+                   req.user?.publicMetadata?.role ||
+                   req.user?.public_metadata?.role;
+
+  res.json({
+    success: true,
+    debug: {
+      userId: req.userId,
+      foundRole: userRole,
+      rawPayload: req.user,
+      // Check all possible locations
+      checks: {
+        'req.user?.role': req.user?.role,
+        'req.user?.metadata?.role': req.user?.metadata?.role,
+        'req.user?.publicMetadata?.role': req.user?.publicMetadata?.role,
+        'req.user?.public_metadata?.role': req.user?.public_metadata?.role
+      }
+    }
+  });
+});
 // middlewares
 
 app.use(express.json())
