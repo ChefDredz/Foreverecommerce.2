@@ -10,6 +10,15 @@ import mpesaRouter from './routes/MpesaRoute.js'; // NEW
 import notificationRouter from './routes/NotificationRoute.js'; // NEW
 
 
+
+
+// App config 
+const app = express()
+const PORT = process.env.PORT || 4000
+connectDB()
+connectCloudinary()
+
+
 // Allow your Vercel frontend domains
 const allowedOrigins = [
   'http://localhost:3000',
@@ -32,13 +41,6 @@ app.use(cors({
   credentials: true
 }));
 
-
-
-// App config 
-const app = express()
-const PORT = process.env.PORT || 4000
-connectDB()
-connectCloudinary()
 
 
 // middlewares
