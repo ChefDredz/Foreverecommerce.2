@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import { useAuth } from "@clerk/clerk-react"; // Import Clerk hook
 import "./List.css";
 import EditProductModal from "./EditProductModal";
+import { backendUrl } from './config';
+
 
 const List = () => {
   const [products, setProducts] = useState([]);
@@ -18,7 +20,7 @@ const List = () => {
   const [showEditModal, setShowEditModal] = useState(false);
 
   // Replace with your actual backend URL
-  const backendUrl = "http://localhost:4000";
+
 
   // Get Clerk token
   const { getToken } = useAuth();

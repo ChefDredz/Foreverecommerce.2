@@ -3,6 +3,10 @@ import { useAuth } from '@clerk/clerk-react';
 import { toast } from 'react-toastify';
 import './AdminOrders.css';
 
+
+import { backendUrl } from './config';
+ 
+
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -10,8 +14,6 @@ const AdminOrders = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterPayment, setFilterPayment] = useState('All');
   const { getToken } = useAuth();
-
-  const backendUrl = 'http://localhost:4000';
 
   // Fetch all orders
   const fetchOrders = async () => {
