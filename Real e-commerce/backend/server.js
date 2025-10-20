@@ -21,8 +21,9 @@ connectCloudinary()
 
 // Allow your Vercel frontend domains
 const allowedOrigins = [
-  'http://localhost:3000',
+  'http://localhost:4000',
   'http://localhost:5173',
+  'http://localhost:5174',
   'https://foreverecommerce-2-gae4.vercel.app',
   'https://foreverecommerce-2.vercel.app',
 ];
@@ -44,7 +45,7 @@ app.use(cors({
 
 
 // middlewares
-app.use(cors())
+
 app.use(express.json())
 
 // api end-points
