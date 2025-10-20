@@ -54,7 +54,7 @@ app.get('/api/debug/me', verifyClerkToken, (req, res) => {
 
 
 
-import { verifyClerkToken } from './middleware/verifyClerkToken.js';
+
 
 // Debug endpoint - ADD THIS
 app.get('/api/debug/check-role', verifyClerkToken, (req, res) => {
