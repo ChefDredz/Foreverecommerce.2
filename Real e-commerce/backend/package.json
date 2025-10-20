@@ -7,8 +7,8 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "server": "nodemon server.js"
+    "start": "node server.js"
+    
   },
   "dependencies": {
     "@clerk/backend": "^2.18.0",
