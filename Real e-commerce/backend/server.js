@@ -13,7 +13,7 @@ import notificationRouter from './routes/NotificationRoute.js'; // NEW
 
 // App config 
 const app = express()
-const port = process.env.PORT || 4000
+const PORT = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
@@ -41,4 +41,4 @@ app.use('/api/orders', orderRouter);
 app.use('/api/mpesa', mpesaRouter); // NEW - M-Pesa routes
 app.use('/api/notifications', notificationRouter); // NEW - Notification routes
 
-app.listen(port , ()=> console.log('Server started on PORT :' + port))
+app.listen(PORT , ()=> console.log(`Server started on PORT ${PORT}` ))
