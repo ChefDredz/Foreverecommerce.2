@@ -5,7 +5,7 @@ import Order from "../models/OrderModel.js";
 export const createOrder = async (req, res) => {
   try {
     const { products, totalAmount, paymentMethod, deliveryInfo } = req.body;
-    const userId = req.userId; // From verifyClerkToken middleware
+    const userId = req.userId;
 
     console.log("📥 Received order data:", {
       userId,
@@ -15,9 +15,7 @@ export const createOrder = async (req, res) => {
       hasDeliveryInfo: !!deliveryInfo
     });
 
-    // Validate required fields
     if (!products || products.length === 0) {
-      console.log("❌ Validation failed: No products");
       return res.status(400).json({ 
         success: false, 
         message: "Products are required. Please add items to your cart." 
@@ -25,28 +23,22 @@ export const createOrder = async (req, res) => {
     }
 
     if (!totalAmount || totalAmount <= 0) {
-      console.log("❌ Validation failed: Invalid total amount");
       return res.status(400).json({ 
         success: false, 
         message: "Total amount is required and must be greater than 0" 
       });
     }
 
-    // Check if products have required fields
     const invalidProducts = products.filter(p => !p.name || !p.price || !p.quantity);
     if (invalidProducts.length > 0) {
-      console.log("❌ Validation failed: Invalid product data", invalidProducts);
       return res.status(400).json({
         success: false,
-        message: "All products must have name, price, and quantity",
-        invalidProducts
+        message: "All products must have name, price, and quantity"
       });
     }
 
-    // Determine payment status based on payment method
-    const paymentStatus = paymentMethod === 'cod' ? 'Pending' : 'Paid';
+    const paymentStatus = paymentMethod === 'cod' ? 'Pending' : 'Pending'; // All start as Pending
 
-    // Create new order
     const newOrder = new Order({
       userId,
       customerName: deliveryInfo?.firstName && deliveryInfo?.lastName 
@@ -76,7 +68,6 @@ export const createOrder = async (req, res) => {
     });
 
     await newOrder.save();
-
     console.log("✅ Order created successfully:", newOrder._id);
 
     res.status(201).json({
@@ -95,30 +86,14 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Get all orders (Admin only)
+// Get all orders - NO ADMIN CHECK (You can add it back later)
 export const getAllOrders = async (req, res) => {
   try {
-    // Check multiple possible locations for admin role
-    const userRole = req.user?.role || 
-                     req.user?.metadata?.role || 
-                     req.user?.publicMetadata?.role ||
-                     req.user?.public_metadata?.role;
+    console.log("📋 Fetching all orders for admin...");
     
-    console.log('🔍 User role check:', {
-      role: userRole,
-      fullPayload: req.user
-    });
-    
-    if (userRole !== 'admin') {
-      console.log('❌ Access denied. Role:', userRole);
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin only.",
-        debug: { userRole, available: !!req.user }
-      });
-    }
-
     const orders = await Order.find({}).sort({ createdAt: -1 });
+    
+    console.log(`✅ Found ${orders.length} orders`);
 
     res.json({
       success: true,
@@ -140,7 +115,6 @@ export const getAllOrders = async (req, res) => {
 export const getUserOrders = async (req, res) => {
   try {
     const userId = req.userId;
-
     const orders = await Order.find({ userId }).sort({ createdAt: -1 });
 
     res.json({
@@ -158,23 +132,12 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
-// Update order status (Admin only)
+// Update order status - NO ADMIN CHECK
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    // Check if user is admin
-    const userRole = req.user?.role || req.user?.metadata?.role || req.user?.publicMetadata?.role;
-    
-    if (userRole !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin only."
-      });
-    }
-
-    // Validate status
     const validStatuses = ["Order Received", "Cargo Packed", "Cargo on Route", "Delivered"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -214,23 +177,12 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-// Update payment status (Admin only)
+// Update payment status - NO ADMIN CHECK
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { paymentStatus } = req.body;
 
-    // Check if user is admin
-    const userRole = req.user?.role || req.user?.metadata?.role || req.user?.publicMetadata?.role;
-    
-    if (userRole !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin only."
-      });
-    }
-
-    // Validate payment status
     const validPaymentStatuses = ["Paid", "Pending", "Failed"];
     if (!validPaymentStatuses.includes(paymentStatus)) {
       return res.status(400).json({
@@ -266,6 +218,70 @@ export const updatePaymentStatus = async (req, res) => {
       success: false,
       message: "Failed to update payment status",
       error: error.message
+    });
+  }
+};
+
+// Cancel order
+export const cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const order = await Order.findOne({ _id: id, userId });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    // Only allow cancellation if order hasn't been delivered
+    if (order.status === "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot cancel delivered orders"
+      });
+    }
+
+    // Delete the order
+    await Order.findByIdAndDelete(id);
+
+    console.log(`✅ Order ${id} cancelled by user`);
+
+    res.json({
+      success: true,
+      message: "Order cancelled successfully"
+    });
+
+  } catch (error) {
+    console.error("❌ Cancel order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel order",
+      error: error.message
+    });
+  }
+};
+
+// Check if user has orders
+export const checkUserHasOrders = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const count = await Order.countDocuments({ userId });
+
+    res.json({
+      success: true,
+      hasOrders: count > 0,
+      orderCount: count
+    });
+
+  } catch (error) {
+    console.error("❌ Check orders error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to check orders"
     });
   }
 };
