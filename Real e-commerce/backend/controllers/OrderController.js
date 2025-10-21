@@ -1,43 +1,27 @@
 // backend/controllers/OrderController.js
 import Order from "../models/OrderModel.js";
 
-// Create a new order
+// Create order
 export const createOrder = async (req, res) => {
   try {
     const { products, totalAmount, paymentMethod, deliveryInfo } = req.body;
     const userId = req.userId;
 
-    console.log("📥 Received order data:", {
-      userId,
-      productsCount: products?.length,
-      totalAmount,
-      paymentMethod,
-      hasDeliveryInfo: !!deliveryInfo
-    });
-
     if (!products || products.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        message: "Products are required. Please add items to your cart." 
+        message: "Products are required" 
       });
     }
 
     if (!totalAmount || totalAmount <= 0) {
       return res.status(400).json({ 
         success: false, 
-        message: "Total amount is required and must be greater than 0" 
+        message: "Invalid total amount" 
       });
     }
 
-    const invalidProducts = products.filter(p => !p.name || !p.price || !p.quantity);
-    if (invalidProducts.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "All products must have name, price, and quantity"
-      });
-    }
-
-    const paymentStatus = paymentMethod === 'cod' ? 'Pending' : 'Pending'; // All start as Pending
+    const paymentStatus = paymentMethod === 'cod' ? 'Pending' : 'Paid';
 
     const newOrder = new Order({
       userId,
@@ -64,18 +48,18 @@ export const createOrder = async (req, res) => {
       totalAmount,
       paymentMethod: paymentMethod || 'cod',
       paymentStatus,
-      status: "Order Received"
+      status: "Order Received",
+      cancellable: true
     });
 
     await newOrder.save();
-    console.log("✅ Order created successfully:", newOrder._id);
+    console.log("✅ Order created:", newOrder._id);
 
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
       order: newOrder
     });
-
   } catch (error) {
     console.error("❌ Create order error:", error);
     res.status(500).json({
@@ -86,21 +70,33 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Get all orders - NO ADMIN CHECK (You can add it back later)
+// Get ALL orders (Admin only)
 export const getAllOrders = async (req, res) => {
   try {
-    console.log("📋 Fetching all orders for admin...");
+    const userRole = req.userRole;
     
+    console.log("🔍 Admin check - Role:", userRole);
+
+    // TEMPORARY: Allow all authenticated users (remove this after setting admin role)
+    // TODO: Uncomment below line and remove the next line after setting admin role in Clerk
+    // if (userRole !== 'admin') {
+    if (false) { // TEMPORARY - Always allow
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only.",
+        debug: { userRole }
+      });
+    }
+
     const orders = await Order.find({}).sort({ createdAt: -1 });
     
-    console.log(`✅ Found ${orders.length} orders`);
+    console.log(`✅ Fetched ${orders.length} orders`);
 
     res.json({
       success: true,
       orders,
       totalOrders: orders.length
     });
-
   } catch (error) {
     console.error("❌ Get all orders error:", error);
     res.status(500).json({
@@ -121,24 +117,81 @@ export const getUserOrders = async (req, res) => {
       success: true,
       orders
     });
-
   } catch (error) {
     console.error("❌ Get user orders error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch your orders",
-      error: error.message
+      message: "Failed to fetch your orders"
     });
   }
 };
 
-// Update order status - NO ADMIN CHECK
+// Cancel order (User)
+export const cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const order = await Order.findOne({ _id: id, userId });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    // Check if order can be cancelled
+    if (!order.cancellable) {
+      return res.status(400).json({
+        success: false,
+        message: "This order cannot be cancelled"
+      });
+    }
+
+    if (order.status === "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot cancel delivered orders"
+      });
+    }
+
+    // Mark as cancelled
+    order.status = "Cancelled";
+    order.cancellable = false;
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Order cancelled successfully",
+      order
+    });
+  } catch (error) {
+    console.error("❌ Cancel order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel order"
+    });
+  }
+};
+
+// Update order status (Admin)
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const userRole = req.userRole;
+    
+    // TEMPORARY: Allow all (remove after setting admin role)
+    // if (userRole !== 'admin') {
+    if (false) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only."
+      });
+    }
 
-    const validStatuses = ["Order Received", "Cargo Packed", "Cargo on Route", "Delivered"];
+    const validStatuses = ["Order Received", "Cargo Packed", "Cargo on Route", "Delivered", "Cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -148,7 +201,10 @@ export const updateOrderStatus = async (req, res) => {
 
     const order = await Order.findByIdAndUpdate(
       id,
-      { status },
+      { 
+        status,
+        cancellable: status === "Order Received" || status === "Cargo Packed"
+      },
       { new: true }
     );
 
@@ -166,28 +222,36 @@ export const updateOrderStatus = async (req, res) => {
       message: "Order status updated successfully",
       order
     });
-
   } catch (error) {
     console.error("❌ Update order status error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update order status",
-      error: error.message
+      message: "Failed to update order status"
     });
   }
 };
 
-// Update payment status - NO ADMIN CHECK
+// Update payment status (Admin)
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { paymentStatus } = req.body;
+    const userRole = req.userRole;
+    
+    // TEMPORARY: Allow all
+    // if (userRole !== 'admin') {
+    if (false) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin only."
+      });
+    }
 
     const validPaymentStatuses = ["Paid", "Pending", "Failed"];
     if (!validPaymentStatuses.includes(paymentStatus)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid payment status. Must be one of: ${validPaymentStatuses.join(", ")}`
+        message: `Invalid payment status`
       });
     }
 
@@ -204,84 +268,16 @@ export const updatePaymentStatus = async (req, res) => {
       });
     }
 
-    console.log(`✅ Order ${id} payment status updated to: ${paymentStatus}`);
-
     res.json({
       success: true,
       message: "Payment status updated successfully",
       order
     });
-
   } catch (error) {
     console.error("❌ Update payment status error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update payment status",
-      error: error.message
-    });
-  }
-};
-
-// Cancel order
-export const cancelOrder = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.userId;
-
-    const order = await Order.findOne({ _id: id, userId });
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found"
-      });
-    }
-
-    // Only allow cancellation if order hasn't been delivered
-    if (order.status === "Delivered") {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot cancel delivered orders"
-      });
-    }
-
-    // Delete the order
-    await Order.findByIdAndDelete(id);
-
-    console.log(`✅ Order ${id} cancelled by user`);
-
-    res.json({
-      success: true,
-      message: "Order cancelled successfully"
-    });
-
-  } catch (error) {
-    console.error("❌ Cancel order error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to cancel order",
-      error: error.message
-    });
-  }
-};
-
-// Check if user has orders
-export const checkUserHasOrders = async (req, res) => {
-  try {
-    const userId = req.userId;
-    const count = await Order.countDocuments({ userId });
-
-    res.json({
-      success: true,
-      hasOrders: count > 0,
-      orderCount: count
-    });
-
-  } catch (error) {
-    console.error("❌ Check orders error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to check orders"
+      message: "Failed to update payment status"
     });
   }
 };

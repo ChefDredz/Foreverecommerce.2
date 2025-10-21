@@ -1,3 +1,4 @@
+// backend/middleware/verifyClerkToken.js
 import { verifyToken } from "@clerk/backend";
 
 export const verifyClerkToken = async (req, res, next) => {
@@ -13,36 +14,36 @@ export const verifyClerkToken = async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
 
-    // Verify the token using Clerk
-    const verificationResult = await verifyToken(token, {
+    // Verify token with Clerk
+    const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
     });
 
-    // Handle different Clerk SDK versions
-    const payload = verificationResult || verificationResult?.data || verificationResult?.payload;
-
     if (!payload) {
-      console.error("❌ Token verification failed");
       return res.status(403).json({ 
         success: false, 
         message: "Invalid or expired token"
       });
     }
 
-    console.log("✅ Clerk Token Verified. User ID:", payload.sub);
-    console.log("🔍 Full payload:", JSON.stringify(payload, null, 2));
+    console.log("✅ Token verified. User ID:", payload.sub);
 
-    // Attach payload to request
+    // Attach full payload
     req.user = payload;
     req.userId = payload.sub;
 
+    // CRITICAL: Extract role from the correct location
+    // Clerk puts custom claims at the root level when using JWT templates
+    req.userRole = payload.role || payload.publicMetadata?.role || payload.metadata?.role;
+
+    console.log("🔑 User role:", req.userRole);
+
     next();
   } catch (error) {
-    console.error("❌ verifyClerkToken Error:", error.message);
+    console.error("❌ Token verification error:", error.message);
     return res.status(403).json({ 
       success: false, 
-      message: "Invalid or expired token",
-      error: error.message 
+      message: "Invalid or expired token"
     });
   }
 };

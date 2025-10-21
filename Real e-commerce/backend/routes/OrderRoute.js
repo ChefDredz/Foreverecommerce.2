@@ -6,24 +6,28 @@ import {
   getAllOrders, 
   updateOrderStatus, 
   getUserOrders,
-  updatePaymentStatus
+  updatePaymentStatus,
+  cancelOrder
 } from "../controllers/OrderController.js";
 
 const router = express.Router();
 
-// Create new order (requires Clerk authentication)
+// Create new order
 router.post("/create", verifyClerkToken, createOrder);
 
 // Get user's own orders
 router.get("/user", verifyClerkToken, getUserOrders);
 
-// Get all orders (admin only - role check happens in controller)
+// Get all orders (admin)
 router.get("/all", verifyClerkToken, getAllOrders);
 
-// Update order cargo status (admin only)
+// Cancel order (user)
+router.put("/:id/cancel", verifyClerkToken, cancelOrder);
+
+// Update order status (admin)
 router.put("/:id/status", verifyClerkToken, updateOrderStatus);
 
-// Update payment status (admin only)
+// Update payment status (admin)
 router.put("/:id/payment", verifyClerkToken, updatePaymentStatus);
 
 export default router;

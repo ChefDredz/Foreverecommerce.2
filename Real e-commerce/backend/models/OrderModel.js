@@ -64,8 +64,12 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Order Received", "Cargo Packed", "Cargo on Route", "Delivered"],
+      enum: ["Order Received", "Cargo Packed", "Cargo on Route", "Delivered", "Cancelled"],
       default: "Order Received",
+    },
+    cancellable: {
+      type: Boolean,
+      default: true
     },
     // M-Pesa payment fields
     mpesaCheckoutRequestId: {
