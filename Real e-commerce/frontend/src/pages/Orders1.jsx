@@ -13,42 +13,44 @@ const Orders1 = () => {
   const [error, setError] = useState("");
   const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [payingOrderId, setPayingOrderId] = useState(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   // Fetch user's orders
-  useEffect(() => {
+  const fetchOrders = async () => {
     if (!isSignedIn) return;
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const token = await getToken({ template: "MilikiAPI" });
+    
+    try {
+      setLoading(true);
+      const token = await getToken({ template: "MilikiAPI" });
 
-        const res = await fetch(`${backendUrl}/api/orders/user`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      const res = await fetch(`${backendUrl}/api/orders/user`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (!res.ok) {
-          throw new Error(`HTTP error ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data.success) {
-          setOrders(data.orders);
-        } else {
-          throw new Error(data.message || "Failed to fetch orders");
-        }
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Failed to load your orders. Please try again later.");
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
       }
-    };
 
+      const data = await res.json();
+      if (data.success) {
+        setOrders(data.orders);
+      } else {
+        throw new Error(data.message || "Failed to fetch orders");
+      }
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      setError("Failed to load your orders. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchOrders();
-  }, [isSignedIn, getToken]);
+  }, [isSignedIn]);
 
   if (!isSignedIn) {
     return <RedirectToSignIn />;
@@ -107,18 +109,50 @@ const Orders1 = () => {
     setTrackingOrderId(null);
   };
 
+  // Cancel order
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      setCancellingOrderId(orderId);
+      const token = await getToken({ template: "MilikiAPI" });
+
+      const response = await fetch(`${backendUrl}/api/orders/${orderId}/cancel`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Order cancelled successfully');
+        fetchOrders(); // Refresh orders
+      } else {
+        toast.error(data.message || 'Failed to cancel order');
+      }
+    } catch (error) {
+      console.error('Cancel error:', error);
+      toast.error('Failed to cancel order');
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
   // Handle M-Pesa Payment
   const handlePayWithMpesa = async (order) => {
-    // Phone number prompt
     const phoneNumber = prompt(
       'Enter your M-Pesa phone number (e.g., 0712345678):'
     );
 
     if (!phoneNumber) {
-      return; // User cancelled
+      return;
     }
 
-    // Validate phone number
     const phoneRegex = /^(0|254|\+254)?[17]\d{8}$/;
     if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
       toast.error('Invalid phone number format. Please use 07XXXXXXXX or 01XXXXXXXX');
@@ -146,9 +180,8 @@ const Orders1 = () => {
       if (data.success) {
         toast.success('📱 Payment request sent to your phone! Please enter your M-Pesa PIN.');
         
-        // Refresh orders after 10 seconds to check payment status
         setTimeout(() => {
-          window.location.reload();
+          fetchOrders();
         }, 10000);
       } else {
         toast.error(data.message || 'Failed to initiate payment');
@@ -169,11 +202,12 @@ const Orders1 = () => {
 
       {orders.map((order, index) => {
         const progress = getProgressClass(order.status);
+        const isCancelled = order.status === "Cancelled";
 
         return (
-          <div key={order._id || index} className="order-box-container">
+          <div key={order._id || index} className={`order-box-container ${isCancelled ? 'cancelled-order' : ''}`}>
             <div className="order-box">
-              {/* Order Header with Payment Status */}
+              {/* Order Header */}
               <div className="order-header">
                 <div className="order-id">Order #{order._id.slice(-8).toUpperCase()}</div>
                 <div className={`payment-status-badge ${order.paymentStatus?.toLowerCase()}`}>
@@ -192,7 +226,7 @@ const Orders1 = () => {
                     <p className="more-items">+{order.items.length - 1} more item(s)</p>
                   )}
                   <p>Total: KES {order.totalAmount?.toLocaleString()}</p>
-                  <p>Status: <b>{order.status}</b></p>
+                  <p>Status: <b className={isCancelled ? 'cancelled-status' : ''}>{order.status}</b></p>
                   <p>
                     Date:{" "}
                     <span className="order-date">
@@ -205,42 +239,59 @@ const Orders1 = () => {
                 </div>
               </div>
 
-              <div className="status-tracker">
-                <div className={`step ${progress >= 1 ? "done" : ""}`}>
-                  🛒 <span>Order Received</span>
+              {!isCancelled && (
+                <div className="status-tracker">
+                  <div className={`step ${progress >= 1 ? "done" : ""}`}>
+                    🛒 <span>Order Received</span>
+                  </div>
+                  <div className={`step ${progress >= 2 ? "done" : ""}`}>
+                    📦 <span>Cargo Packed</span>
+                  </div>
+                  <div className={`step ${progress >= 3 ? "done" : ""}`}>
+                    🚚 <span>On Route</span>
+                  </div>
+                  <div className={`step ${progress >= 4 ? "done" : ""}`}>
+                    ✅ <span>Delivered</span>
+                  </div>
                 </div>
-                <div className={`step ${progress >= 2 ? "done" : ""}`}>
-                  📦 <span>Cargo Packed</span>
-                </div>
-                <div className={`step ${progress >= 3 ? "done" : ""}`}>
-                  🚚 <span>On Route</span>
-                </div>
-                <div className={`step ${progress >= 4 ? "done" : ""}`}>
-                  ✅ <span>Delivered</span>
-                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="order-actions">
+                {/* Track Order */}
+                {order.status === "Cargo on Route" && !isCancelled && (
+                  <button
+                    className="track-order-btn"
+                    onClick={() => handleTrackOrder(order._id)}
+                  >
+                    🚀 TRACK ORDER
+                  </button>
+                )}
+
+                {/* Pay with M-Pesa */}
+                {order.paymentStatus === 'Pending' && order.paymentMethod === 'm-pesa' && !isCancelled && (
+                  <button
+                    className="pay-mpesa-btn"
+                    onClick={() => handlePayWithMpesa(order)}
+                    disabled={payingOrderId === order._id}
+                  >
+                    {payingOrderId === order._id ? 'Processing...' : '💳 Pay with M-Pesa'}
+                  </button>
+                )}
+
+                {/* Cancel Order */}
+                {order.cancellable && !isCancelled && (
+                  <button
+                    className="cancel-order-btn"
+                    onClick={() => handleCancelOrder(order._id)}
+                    disabled={cancellingOrderId === order._id}
+                  >
+                    {cancellingOrderId === order._id ? 'Cancelling...' : '❌ Cancel Order'}
+                  </button>
+                )}
               </div>
 
-              {order.status === "Cargo on Route" && (
-                <button
-                  id="track-order-btn"
-                  onClick={() => handleTrackOrder(order._id)}
-                >
-                  🚀 TRACK ORDER
-                </button>
-              )}
-
-              {/* Pay with M-Pesa Button */}
-              {order.paymentStatus === 'Pending' && order.paymentMethod === 'm-pesa' && (
-                <button
-                  className="pay-mpesa-btn"
-                  onClick={() => handlePayWithMpesa(order)}
-                  disabled={payingOrderId === order._id}
-                >
-                  {payingOrderId === order._id ? 'Processing...' : '💳 Pay with M-Pesa'}
-                </button>
-              )}
-
-              {/* Show receipt if paid */}
+              {/* Receipt */}
               {order.paymentStatus === 'Paid' && order.mpesaReceiptNumber && (
                 <div className="receipt-info">
                   <p className="receipt-number">
@@ -269,10 +320,9 @@ const TrackingModal = ({ orderId, onClose }) => {
   const [animationProgress, setAnimationProgress] = useState(0);
 
   useEffect(() => {
-    // Simulate cargo movement animation
     const interval = setInterval(() => {
       setAnimationProgress(prev => {
-        if (prev >= 100) return 0; // Loop animation
+        if (prev >= 100) return 0;
         return prev + 2;
       });
     }, 100);
@@ -290,16 +340,13 @@ const TrackingModal = ({ orderId, onClose }) => {
 
         <div className="tracking-map">
           <div className="map-container">
-            {/* Simulated Route */}
             <div className="route-line"></div>
             
-            {/* Warehouse Point */}
             <div className="location-point warehouse">
               <div className="point-icon">🏭</div>
               <div className="point-label">Warehouse</div>
             </div>
 
-            {/* Delivery Truck (animated) */}
             <div 
               className="delivery-truck" 
               style={{ left: `${animationProgress}%` }}
@@ -307,7 +354,6 @@ const TrackingModal = ({ orderId, onClose }) => {
               🚚
             </div>
 
-            {/* Destination Point */}
             <div className="location-point destination">
               <div className="point-icon">🏠</div>
               <div className="point-label">Your Location</div>

@@ -89,13 +89,13 @@
 .product-price{
     font-size: 20px;
     font-weight: 600;
-    color: black;
+    color: #000;
 }
 
 .product-description{
     font-size: 18px;
     font-weight: 500;
-    color: #000;
+    color: #fff;
     font-family: 'Outfit', sans-serif;
 }
 

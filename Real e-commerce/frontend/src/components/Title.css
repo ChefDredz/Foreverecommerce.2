@@ -3,6 +3,7 @@
 
   width: 80vw;
   margin-left: 8.5vw;
+  height: 7vh;
   
   display: flex;
   flex-direction: row;
@@ -14,14 +15,14 @@
 .title-container p {
   font-size: 36px;
   font-weight: 500;
-  color: #000;
+  color: #fff;
   font-family: "Outfit";
   margin-bottom: 10px;
 }
 .title-container b {
   font-size: 30px;
   font-weight: 400;
-  color: #000;
+  color: #fff;
   font-family: "Outfit";
   margin-bottom: 10px;
 }

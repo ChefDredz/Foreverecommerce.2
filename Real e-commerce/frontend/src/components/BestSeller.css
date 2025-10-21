@@ -1,12 +1,181 @@
-.bestseller-collection-container{
-    max-width: 80vw;
-    height: auto;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    margin-top: 50px;
-    margin-left: 8vw;
-    gap: 20px;
+/* Bestseller Container */
+.bestseller-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 0;
+  background-color: transparent;
 }
 
+/* Product Row */
+.product-row {
+  padding: 2rem 0;
+}
+
+.product-row-title {
+  color: #1f2937;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+}
+
+/* Product Grid */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  padding: 0 1rem;
+}
+
+/* Product Card Link */
+.product-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Product Card */
+.product-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.product-card-image-wrapper {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background-color: #f3f4f6;
+}
+
+.product-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 300ms ease-in-out;
+}
+
+.product-card-image.hovered {
+  transform: scale(1.1);
+}
+
+/* Product Card Overlay */
+.product-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 300ms ease-in-out;
+  display: flex;
+  align-items: flex-end;
+}
+
+.product-card-overlay.visible {
+  opacity: 1;
+}
+
+/* Product Card Info */
+.product-card-info {
+  padding: 1rem;
+  width: 100%;
+}
+
+.product-card-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-card-price {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 0 1.5rem;
+  }
+
+  .product-row-title {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .product-card-title {
+    font-size: 1.125rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    padding: 0 2rem;
+  }
+
+  .product-row-title {
+    padding: 0 2rem;
+    font-size: 1.75rem;
+  }
+
+  .bestseller-container {
+    padding: 3rem 0;
+  }
+
+  .product-row {
+    padding: 2.5rem 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  .product-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Dark theme support (if you want to match MovieBox's dark theme) */
+@media (prefers-color-scheme: dark) {
+  .product-row-title {
+    color: white;
+  }
+  
+  .bestseller-container {
+    background-color: transparent;
+  }
+}
+
+/* Additional hover effects */
+.product-card:hover .product-card-image-wrapper {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading skeleton (optional) */
+.product-card-skeleton {
+  aspect-ratio: 2 / 3;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

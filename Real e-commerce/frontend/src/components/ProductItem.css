@@ -43,7 +43,8 @@
     height: 7vh;
 }
 .details-container p {
-    text-decoration: none!important;  
+    text-decoration: none!important; 
+    color: #fff; 
 }
 .product-name {
     font-size: 14px;
@@ -51,7 +52,7 @@
     margin: -13px 0;
     text-align: left;
     font-family: 'outfit';
-    color: black;
+    color: #fff;
     text-decoration: none;
     max-width: 140px;
     

@@ -17,7 +17,9 @@ createRoot(document.getElementById("root")).render(
   <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
     <BrowserRouter>
       <ShopContextProvider>
-        <App />
+        <div className="dark-theme">
+          <App />
+        </div>
       </ShopContextProvider>
     </BrowserRouter>
   </ClerkProvider>

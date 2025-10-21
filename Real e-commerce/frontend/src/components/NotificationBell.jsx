@@ -13,31 +13,45 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
 
   // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!isSignedIn) return;
+ // Fetch notifications with retry logic
+const fetchNotifications = async () => {
+  if (!isSignedIn) return;
 
-    try {
-      setLoading(true);
-      const token = await getToken({ template: "MilikiAPI" });
+  try {
+    setLoading(true);
+    const token = await getToken({ template: "MilikiAPI" });
 
-      const response = await fetch(`${backendUrl}/api/notifications`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const data = await response.json();
+    const response = await fetch(`${backendUrl}/api/notifications`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      signal: controller.signal
+    });
 
-      if (data.success) {
-        setNotifications(data.notifications);
-        setUnreadCount(data.unreadCount);
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+
+    if (data.success) {
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+    }
+  } catch (error) {
+    // Silently fail if server is sleeping (don't spam console)
+    if (error.name !== 'AbortError') {
+      console.log('Notifications temporarily unavailable');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Mark as read
   const markAsRead = async (notificationId) => {
