@@ -1,59 +1,51 @@
-// middleware/requireAdmin.js
-import { verifyToken } from "@clerk/backend";
-import _default from "validator";
+// backend/middleware/requireAdmin.js
 
-export  const requireAdmin = async (req, res, next) => {
+import { clerkClient } from "@clerk/clerk-sdk-node";
+
+const adminAuth = async (req, res, next) => {
   try {
+    console.log("🔐 Admin auth middleware triggered");
+    
+    // Get token from header
     const authHeader = req.headers.authorization;
-
-    // 1️⃣ Check for Authorization header
+    console.log("📝 Auth header:", authHeader ? "Present" : "Missing");
+    
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Missing Authorization header" });
-    }
-
-    // 2️⃣ Extract token
-    const token = authHeader.split(" ")[1];
-
-    // 3️⃣ Verify token using Clerk secret key
-    const result = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY,
-      issuer: process.env.CLERK_ISSUER_URL,
-    });
-
-    // verifyToken returns the payload directly, not wrapped in an object
-    const payload = result;
-    
-    console.log("🧩 Clerk token payload:", payload);
-
-    // 4️⃣ Role check - Check multiple possible locations for the role
-    const userRole = payload?.role || payload?.metadata?.role || payload?.publicMetadata?.role;
-    
-    if (!userRole || userRole !== "admin") {
-      console.log("❌ Role check failed. Found role:", userRole);
-      return res
-        .status(403)
-        .json({ success: false, message: "Forbidden: Not an admin" });
-    }
-
-    console.log("✅ Admin verified. Role:", userRole);
-
-    // 5️⃣ Attach payload to request for downstream use
-    req.user = payload;
-
-    // ✅ Success
-    next();
-  } catch (error) {
-    console.error("requireAdmin Error:", error);
-    return res
-      .status(403)
-      .json({ 
+      console.error("❌ No valid authorization header");
+      return res.status(401).json({ 
         success: false, 
-        message: "Invalid or unverified token",
-        error: error.message 
+        message: "Not authorized - No token provided" 
       });
+    }
+
+    const token = authHeader.split(" ")[1];
+    console.log("🔑 Token received (first 30 chars):", token.substring(0, 30) + "...");
+
+    try {
+      // Verify token with Clerk using environment variables
+      const payload = await clerkClient.verifyToken(token, {
+        jwtKey: process.env.CLERK_SECRET_KEY,
+      });
+
+      console.log("✅ Token verified. User ID:", payload.sub);
+      req.userId = payload.sub;
+      next();
+    } catch (verifyError) {
+      console.error("❌ Token verification failed:", verifyError.message);
+      return res.status(403).json({ 
+        success: false, 
+        message: "Invalid or expired token",
+        error: verifyError.message 
+      });
+    }
+  } catch (error) {
+    console.error("❌ Admin auth error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Authentication error",
+      error: error.message 
+    });
   }
 };
 
-export default requireAdmin
+export default adminAuth;
