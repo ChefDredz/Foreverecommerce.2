@@ -39,7 +39,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Add preflight handling for all routes
-app.options(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // API Endpoints
 app.use("/api/user", userRouter);
