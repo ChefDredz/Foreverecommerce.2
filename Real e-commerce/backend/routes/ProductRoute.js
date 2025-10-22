@@ -5,8 +5,8 @@ import {
   removeProduct,
   singleProduct,
 } from "../controllers/ProductController.js";
-import upload from "../middleware/multer.js";
-import adminAuth from "../middleware/adminAuth.js";
+import upload from "../middleware/Multer.js";
+import adminAuth from "../middleware/requireAdmin.js";
 
 const productRouter = express.Router();
 
