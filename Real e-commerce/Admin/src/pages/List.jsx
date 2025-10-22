@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useAuth } from "@clerk/clerk-react"; // Import Clerk hook
+import { useAuth } from "@clerk/clerk-react";
 import "./List.css";
 import EditProductModal from "./EditProductModal";
-import { backendUrl } from './config';
-
 
 const List = () => {
   const [products, setProducts] = useState([]);
@@ -19,54 +17,53 @@ const List = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  // Replace with your actual backend URL
-
-
-  // Get Clerk token
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://foreverecommerce-2.onrender.com";
   const { getToken } = useAuth();
 
-  // Fetch all products
-  // Fetch all products
+  // ✅ FIX: Use GET request (no auth) for listing products
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      console.log("📋 Fetching products from:", `${backendUrl}/api/product/list`);
 
-      // ✅ Get Clerk token properly
-      const token = await getToken({ template: "MilikiAPI" });
+      // ✅ Use GET request (public endpoint, no auth needed)
+      const response = await axios.get(`${backendUrl}/api/product/list`);
 
-      const response = await axios.post(
-        `${backendUrl}/api/product/list`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }, // ✅ Add Bearer prefix
-        }
-      );
+      console.log("✅ Response:", response.data);
 
       if (response.data.success) {
         setProducts(response.data.products);
         setFilteredProducts(response.data.products);
-        toast.success("Products loaded successfully");
+        toast.success(`Loaded ${response.data.products.length} products`);
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || "Failed to load products");
       }
     } catch (error) {
-      console.error(error);
+      console.error("❌ Fetch error:", error);
       toast.error("Failed to fetch products");
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete product
-  // Delete product
+  // ✅ Delete product (requires auth)
   const removeProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
     }
 
     try {
-      // ✅ Get Clerk token again here
+      console.log("🗑️ Deleting product:", id);
+      
+      // Get Clerk token for admin operations
       const token = await getToken({ template: "MilikiAPI" });
+      
+      if (!token) {
+        toast.error("Authentication required. Please login again.");
+        return;
+      }
+
+      console.log("🔑 Token obtained:", token.substring(0, 20) + "...");
 
       const response = await axios.post(
         `${backendUrl}/api/product/remove`,
@@ -76,15 +73,23 @@ const List = () => {
         }
       );
 
+      console.log("✅ Delete response:", response.data);
+
       if (response.data.success) {
         toast.success("Product deleted successfully");
         fetchProducts(); // Refresh the list
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || "Failed to delete product");
       }
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete product");
+      console.error("❌ Delete error:", error);
+      if (error.response?.status === 403) {
+        toast.error("Not authorized. Please check your admin permissions.");
+      } else if (error.response?.status === 401) {
+        toast.error("Authentication failed. Please login again.");
+      } else {
+        toast.error("Failed to delete product");
+      }
     }
   };
 
@@ -189,7 +194,7 @@ const List = () => {
       <div className="list-header">
         <h2>All Products</h2>
         <button onClick={fetchProducts} className="refresh-btn">
-          Refresh List
+          🔄 Refresh List
         </button>
       </div>
 
@@ -319,7 +324,7 @@ const List = () => {
                   <td>
                     {product.bestseller ? (
                       <span className="badge bestseller-badge">
-                        ★ Bestseller
+                        ⭐ Bestseller
                       </span>
                     ) : (
                       <span className="badge regular-badge">Regular</span>
