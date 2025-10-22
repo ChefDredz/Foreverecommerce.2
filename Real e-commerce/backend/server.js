@@ -5,6 +5,7 @@ import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
 import userRouter from "./routes/UserRoute.js";
 import productRouter from "./routes/ProductRoute.js";
+import orderRouter from "./routes/OrderRoute.js"; // Add at top
 
 // App Config
 const app = express();
@@ -43,6 +44,7 @@ app.options(/.*/, cors(corsOptions)); // <-- the magic fix 🔥
 // API Endpoints
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
+app.use("/api/orders", orderRouter); // Add this line
 
 // Health check endpoint
 app.get("/", (req, res) => {
