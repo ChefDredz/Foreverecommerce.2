@@ -1,7 +1,8 @@
 // middleware/requireAdmin.js
 import { verifyToken } from "@clerk/backend";
+import _default from "validator";
 
-export const requireAdmin = async (req, res, next) => {
+export  const requireAdmin = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -54,3 +55,5 @@ export const requireAdmin = async (req, res, next) => {
       });
   }
 };
+
+export default requireAdmin
