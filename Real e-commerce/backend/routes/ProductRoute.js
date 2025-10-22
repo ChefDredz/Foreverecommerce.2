@@ -1,7 +1,7 @@
 import express from "express";
 import {
   addProduct,
-  listProducts,
+  listProduct,
   removeProduct,
   singleProduct,
 } from "../controllers/ProductController.js";
@@ -26,7 +26,7 @@ productRouter.post(
 productRouter.post("/remove", adminAuth, removeProduct);
 
 // Public routes (no authentication needed for client frontend)
-productRouter.get("/list", listProducts); // ✅ GET - Public access for client
+productRouter.get("/list", listProduct); // ✅ GET - Public access for client
 productRouter.post("/list", adminAuth, listProducts); // ✅ POST - Admin access (backward compatible)
 productRouter.post("/single", singleProduct);
 
