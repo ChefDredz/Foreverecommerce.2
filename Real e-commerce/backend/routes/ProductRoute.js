@@ -27,7 +27,7 @@ productRouter.post("/remove", adminAuth, removeProduct);
 
 // Public routes (no authentication needed for client frontend)
 productRouter.get("/list", listProduct); // ✅ GET - Public access for client
-productRouter.post("/list", adminAuth, listProducts); // ✅ POST - Admin access (backward compatible)
+productRouter.post("/list", adminAuth, listProduct); // ✅ POST - Admin access (backward compatible)
 productRouter.post("/single", singleProduct);
 
 // Health check for products endpoint
