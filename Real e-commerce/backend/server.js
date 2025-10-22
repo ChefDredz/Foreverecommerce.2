@@ -3,8 +3,8 @@ import cors from "cors";
 import "dotenv/config";
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
-import userRouter from "./routes/UserRoute.js";
-import productRouter from "./routes/ProductRoute.js";
+import userRouter from "./routes/userRoute.js";
+import productRouter from "./routes/productRoute.js";
 
 // App Config
 const app = express();
@@ -36,7 +36,7 @@ const corsOptions = {
   optionsSuccessStatus: 200, // For legacy browser support
 };
 
-
+app.use(cors(corsOptions));
 
 // Add preflight handling for all routes
 app.options("*", cors(corsOptions));
