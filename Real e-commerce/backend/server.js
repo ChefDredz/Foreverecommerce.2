@@ -36,7 +36,7 @@ const corsOptions = {
   optionsSuccessStatus: 200, // For legacy browser support
 };
 
-app.use(cors(corsOptions));
+
 
 // Add preflight handling for all routes
 app.options("*", cors(corsOptions));
