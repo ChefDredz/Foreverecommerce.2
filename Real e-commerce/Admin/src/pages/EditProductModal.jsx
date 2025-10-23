@@ -1,119 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import { useAuth } from '@clerk/clerk-react'; // Import Clerk hook
-import './EditProductModal.css';
+import React, { useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useAuth } from "@clerk/clerk-react";
+import "./EditProductModal.css";
 
 const EditProductModal = ({ product, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    subCategory: '',
-    bestseller: false
+    id: product._id,
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    category: product.category,
+    subCategory: product.subCategory,
+    bestseller: product.bestseller,
+    sizes: product.sizes,
   });
 
-  const [sizes, setSizes] = useState([]);
-  const [images, setImages] = useState([null, null, null, null]);
-  const [existingImages, setExistingImages] = useState([]);
+  const [images, setImages] = useState({
+    image1: null,
+    image2: null,
+    image3: null,
+    image4: null,
+  });
+
   const [loading, setLoading] = useState(false);
+  // ✅ FIX: Use the correct backend URL
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://foreverecommerce-2.onrender.com";
+  const { getToken } = useAuth();
 
-  const backendUrl = 'http://localhost:4000';
-  const token = localStorage.getItem('adminToken'); // Get admin token
+  console.log("🔗 Backend URL:", backendUrl); // Debug log
 
-  // Common categories and sizes (adjust based on your needs)
-  const categories = ['Men', 'Women', 'Kids'];
-  const subCategories = ['Topwear', 'Bottomwear', 'Winterwear'];
-  const availableSizes = ['S', 'M', 'L', 'XL', 'XXL'];
-
-  useEffect(() => {
-    if (product) {
-      setFormData({
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        category: product.category,
-        subCategory: product.subCategory,
-        bestseller: product.bestseller
-      });
-      setSizes(product.sizes || []);
-      setExistingImages(product.image || []);
-    }
-  }, [product]);
-
-  const handleInputChange = (e) => {
+  // Handle input changes
+  const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
+  // Handle size selection
   const handleSizeToggle = (size) => {
-    setSizes(prev =>
-      prev.includes(size)
-        ? prev.filter(s => s !== size)
-        : [...prev, size]
-    );
+    const newSizes = formData.sizes.includes(size)
+      ? formData.sizes.filter((s) => s !== size)
+      : [...formData.sizes, size];
+    setFormData({ ...formData, sizes: newSizes });
   };
 
-  const handleImageChange = (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const newImages = [...images];
-      newImages[index] = file;
-      setImages(newImages);
+  // Handle image upload
+  const handleImageChange = (e) => {
+    const { name, files } = e.target;
+    if (files && files[0]) {
+      setImages({ ...images, [name]: files[0] });
     }
   };
 
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.name || !formData.description || !formData.price || !formData.category || !formData.subCategory) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
-    if (sizes.length === 0) {
-      toast.error('Please select at least one size');
-      return;
-    }
+    setLoading(true);
 
     try {
-      setLoading(true);
+      console.log("✏️ Updating product:", formData.id);
 
-      const formDataToSend = new FormData();
-      formDataToSend.append('id', product._id);
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('price', formData.price);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('subCategory', formData.subCategory);
-      formDataToSend.append('bestseller', formData.bestseller);
-      formDataToSend.append('sizes', JSON.stringify(sizes));
+      // Get Clerk token
+      const token = await getToken({ template: "MilikiAPI" });
+      
+      if (!token) {
+        toast.error("Authentication required. Please login again.");
+        setLoading(false);
+        return;
+      }
 
-      // Add images if they were changed
-      images.forEach((image, index) => {
-        if (image) {
-          formDataToSend.append(`image${index + 1}`, image);
+      // Create FormData for file upload
+      const data = new FormData();
+      data.append("id", formData.id);
+      data.append("name", formData.name);
+      data.append("description", formData.description);
+      data.append("price", formData.price);
+      data.append("category", formData.category);
+      data.append("subCategory", formData.subCategory);
+      data.append("bestseller", formData.bestseller);
+      data.append("sizes", JSON.stringify(formData.sizes));
+
+      // Append images if new ones are selected
+      if (images.image1) data.append("image1", images.image1);
+      if (images.image2) data.append("image2", images.image2);
+      if (images.image3) data.append("image3", images.image3);
+      if (images.image4) data.append("image4", images.image4);
+
+      console.log("📤 Sending update request...");
+
+      const response = await axios.post(
+        `${backendUrl}/api/product/update`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         }
-      });
+      );
 
-      const response = await axios.post(`${backendUrl}/api/product/update`, formDataToSend, {
-        headers: { token }
-      });
+      console.log("✅ Update response:", response.data);
 
       if (response.data.success) {
-        toast.success('Product updated successfully');
+        toast.success("Product updated successfully!");
         onUpdate(); // Refresh the product list
-        onClose(); // Close the modal
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || "Failed to update product");
       }
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to update product');
+      console.error("❌ Update error:", error);
+      if (error.response?.status === 403) {
+        toast.error("Not authorized. Please check your admin permissions.");
+      } else if (error.response?.status === 401) {
+        toast.error("Authentication failed. Please login again.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to update product");
+      }
     } finally {
       setLoading(false);
     }
@@ -124,87 +129,95 @@ const EditProductModal = ({ product, onClose, onUpdate }) => {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Edit Product</h2>
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="edit-form">
+          {/* Product Name */}
           <div className="form-group">
             <label>Product Name *</label>
             <input
               type="text"
               name="name"
               value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Enter product name"
+              onChange={handleChange}
               required
+              placeholder="Enter product name"
             />
           </div>
 
+          {/* Description */}
           <div className="form-group">
             <label>Description *</label>
             <textarea
               name="description"
               value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Enter product description"
-              rows="4"
+              onChange={handleChange}
               required
+              rows="4"
+              placeholder="Enter product description"
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Category *</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Category</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Sub-Category *</label>
-              <select
-                name="subCategory"
-                value={formData.subCategory}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Sub-Category</option>
-                {subCategories.map(subCat => (
-                  <option key={subCat} value={subCat}>{subCat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Price (KSH) *</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="Enter price"
-                min="0"
-                required
-              />
-            </div>
+          {/* Price */}
+          <div className="form-group">
+            <label>Price (KSH) *</label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              required
+              min="0"
+              placeholder="Enter price"
+            />
           </div>
 
+          {/* Category */}
           <div className="form-group">
-            <label>Sizes *</label>
-            <div className="sizes-selection">
-              {availableSizes.map(size => (
+            <label>Category *</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Category</option>
+              <option value="Men">Men</option>
+              <option value="Women">Women</option>
+              <option value="Kids">Kids</option>
+            </select>
+          </div>
+
+          {/* Sub-Category */}
+          <div className="form-group">
+            <label>Sub-Category *</label>
+            <select
+              name="subCategory"
+              value={formData.subCategory}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Sub-Category</option>
+              <option value="Topwear">Topwear</option>
+              <option value="Bottomwear">Bottomwear</option>
+              <option value="Winterwear">Winterwear</option>
+            </select>
+          </div>
+
+          {/* Sizes */}
+          <div className="form-group">
+            <label>Available Sizes *</label>
+            <div className="sizes-selector">
+              {["S", "M", "L", "XL", "XXL"].map((size) => (
                 <button
                   key={size}
                   type="button"
-                  className={`size-btn ${sizes.includes(size) ? 'active' : ''}`}
+                  className={`size-btn ${
+                    formData.sizes.includes(size) ? "selected" : ""
+                  }`}
                   onClick={() => handleSizeToggle(size)}
                 >
                   {size}
@@ -213,45 +226,71 @@ const EditProductModal = ({ product, onClose, onUpdate }) => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="checkbox-label">
+          {/* Bestseller */}
+          <div className="form-group checkbox-group">
+            <label>
               <input
                 type="checkbox"
                 name="bestseller"
                 checked={formData.bestseller}
-                onChange={handleInputChange}
+                onChange={handleChange}
               />
               Mark as Bestseller
             </label>
           </div>
 
+          {/* Current Images */}
           <div className="form-group">
-            <label>Product Images (Optional - leave empty to keep existing images)</label>
-            <div className="images-grid">
-              {existingImages.map((img, index) => (
-                <div key={index} className="image-upload-box">
-                  <img src={img} alt={`Product ${index + 1}`} className="existing-image" />
+            <label>Current Images</label>
+            <div className="current-images">
+              {product.image.map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  alt={`Product ${index + 1}`}
+                  className="current-image"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Upload New Images */}
+          <div className="form-group">
+            <label>Upload New Images (Optional)</label>
+            <div className="image-uploads">
+              {["image1", "image2", "image3", "image4"].map((imgName, index) => (
+                <div key={imgName} className="image-upload-item">
+                  <label htmlFor={imgName}>Image {index + 1}</label>
                   <input
                     type="file"
+                    id={imgName}
+                    name={imgName}
+                    onChange={handleImageChange}
                     accept="image/*"
-                    onChange={(e) => handleImageChange(index, e)}
-                    id={`image-${index}`}
                   />
-                  <label htmlFor={`image-${index}`} className="upload-label">
-                    Change Image {index + 1}
-                  </label>
+                  {images[imgName] && (
+                    <span className="file-name">{images[imgName].name}</span>
+                  )}
                 </div>
               ))}
             </div>
-            <p className="image-note">Upload new images only if you want to replace the existing ones</p>
+            <p className="help-text">
+              Leave empty to keep existing images. Upload new images to replace them.
+            </p>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" onClick={onClose} className="cancel-btn" disabled={loading}>
+          {/* Action Buttons */}
+          <div className="form-actions">
+            <button
+              type="button"
+              onClick={onClose}
+              className="cancel-btn"
+              disabled={loading}
+            >
               Cancel
             </button>
             <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Product'}
+              {loading ? "Updating..." : "Update Product"}
             </button>
           </div>
         </form>
