@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
 
 export const ShopContext = createContext();
 
@@ -10,6 +11,9 @@ const ShopContextProvider = (props) => {
   
   const currency = "KSH";
   const delivery_fee = 200;
+  
+  // ✅ Add navigate
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -172,6 +176,7 @@ const ShopContextProvider = (props) => {
     backendUrl,
     loading,
     fetchProducts, // Expose this for manual refresh if needed
+    navigate, // ✅ Add navigate to context
   };
 
   return (
