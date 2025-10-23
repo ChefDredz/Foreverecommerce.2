@@ -1,7 +1,7 @@
 // backend/routes/OrderRoute.js
-
 import express from "express";
 import adminAuth from "../middleware/requireAdmin.js";
+import { verifyClerkToken } from "../middleware/verifyClerkToken.js";
 import Order from "../models/OrderModel.js";
 
 const orderRouter = express.Router();
@@ -19,16 +19,18 @@ orderRouter.get("/health", (req, res) => {
         "POST /api/orders/status"
       ],
       client: [
-        "POST /api/orders/create"
+        "POST /api/orders/create",
+        "GET /api/orders/user"
       ]
     }
   });
 });
 
-// ✅ CREATE ORDER - Client endpoint
-orderRouter.post("/create", async (req, res) => {
+// ✅ CREATE ORDER - Client endpoint (WITH AUTH)
+orderRouter.post("/create", verifyClerkToken, async (req, res) => {
   try {
     console.log("📦 Creating new order");
+    console.log("👤 Authenticated User ID:", req.userId);
     console.log("📝 Order data received:", req.body);
     
     const { products, totalAmount, paymentMethod, deliveryInfo } = req.body;
@@ -51,7 +53,7 @@ orderRouter.post("/create", async (req, res) => {
 
     // Format items for order model
     const formattedItems = products.map(item => ({
-      productId: item.productId,
+      productId: item.productId || item._id,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
@@ -59,9 +61,9 @@ orderRouter.post("/create", async (req, res) => {
       image: item.image || ""
     }));
 
-    // Create new order in database
+    // ✅ Use authenticated user ID from Clerk
     const newOrder = new Order({
-      userId: "guest_" + Date.now(), // TODO: Replace with actual user ID from auth
+      userId: req.userId, // From Clerk auth
       customerName: `${deliveryInfo.firstName} ${deliveryInfo.lastName}`,
       email: deliveryInfo.email,
       phone: deliveryInfo.phone,
@@ -76,13 +78,15 @@ orderRouter.post("/create", async (req, res) => {
       totalAmount: totalAmount,
       paymentMethod: paymentMethod || "cod",
       paymentStatus: paymentMethod === "cod" ? "Pending" : "Pending",
-      status: "Order Received"
+      status: "Order Received",
+      cancellable: true
     });
 
     // Save to database
     await newOrder.save();
     
     console.log("✅ Order saved to database:", newOrder._id);
+    console.log("✅ Associated with user:", req.userId);
     
     res.json({
       success: true,
@@ -98,9 +102,115 @@ orderRouter.post("/create", async (req, res) => {
     
   } catch (error) {
     console.error("❌ Error creating order:", error);
+    console.error("Stack:", error.stack);
     res.status(500).json({
       success: false,
       message: "Failed to create order. Please try again.",
+      error: error.message
+    });
+  }
+});
+
+// ✅ Get user's own orders (Client - WITH AUTH & DEBUGGING)
+orderRouter.get("/user", verifyClerkToken, async (req, res) => {
+  try {
+    console.log("🔍 GET /api/orders/user called");
+    console.log("👤 req.userId:", req.userId);
+    console.log("👤 req.user:", req.user);
+    
+    const userId = req.userId;
+    
+    if (!userId) {
+      console.error("❌ No userId found after auth");
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated - no userId"
+      });
+    }
+
+    console.log("🔍 Querying orders for userId:", userId);
+    
+    // Fetch user's orders, sorted by newest first
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    
+    console.log(`✅ Found ${orders.length} orders for user ${userId}`);
+    
+    if (orders.length > 0) {
+      console.log("📦 First order:", {
+        id: orders[0]._id,
+        userId: orders[0].userId,
+        status: orders[0].status
+      });
+    }
+    
+    res.json({
+      success: true,
+      orders,
+      count: orders.length
+    });
+  } catch (error) {
+    console.error("❌ Error in GET /user:");
+    console.error("Error message:", error.message);
+    console.error("Stack trace:", error.stack);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch orders",
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// ✅ Cancel order (Client - authenticated)
+orderRouter.put("/:id/cancel", verifyClerkToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    console.log(`🚫 User ${userId} attempting to cancel order ${id}`);
+
+    // Find order that belongs to this user
+    const order = await Order.findOne({ _id: id, userId });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found or you don't have permission"
+      });
+    }
+
+    // Check if order can be cancelled
+    if (!order.cancellable) {
+      return res.status(400).json({
+        success: false,
+        message: "This order cannot be cancelled"
+      });
+    }
+
+    if (order.status === "Delivered" || order.status === "Cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot cancel delivered or already cancelled orders"
+      });
+    }
+
+    // Mark as cancelled
+    order.status = "Cancelled";
+    order.cancellable = false;
+    await order.save();
+
+    console.log(`✅ Order ${id} cancelled successfully`);
+
+    res.json({
+      success: true,
+      message: "Order cancelled successfully",
+      order
+    });
+  } catch (error) {
+    console.error("❌ Cancel order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel order",
       error: error.message
     });
   }
@@ -179,8 +289,11 @@ orderRouter.post("/status", adminAuth, async (req, res) => {
     // Update order status in database
     const order = await Order.findByIdAndUpdate(
       orderId,
-      { status },
-      { new: true } // Return updated document
+      { 
+        status,
+        cancellable: status === "Order Received" || status === "Cargo Packed"
+      },
+      { new: true }
     );
 
     if (!order) {
@@ -201,31 +314,6 @@ orderRouter.post("/status", adminAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update order",
-      error: error.message
-    });
-  }
-});
-
-// ✅ Get user's orders (Client - with user ID)
-orderRouter.get("/user/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    console.log("📦 Fetching orders for user:", userId);
-    
-    // Fetch user's orders, sorted by newest first
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
-    
-    console.log(`✅ Found ${orders.length} orders for user`);
-    res.json({
-      success: true,
-      orders,
-      count: orders.length
-    });
-  } catch (error) {
-    console.error("❌ Error fetching user orders:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch orders",
       error: error.message
     });
   }
