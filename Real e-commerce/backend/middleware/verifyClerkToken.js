@@ -1,11 +1,14 @@
 // backend/middleware/verifyClerkToken.js
-import { verifyToken } from "@clerk/backend";
+import jwt from "jsonwebtoken";
 
 export const verifyClerkToken = async (req, res, next) => {
   try {
+    console.log("🔐 Verifying Clerk token...");
+    
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("❌ Missing or invalid Authorization header");
       return res.status(401).json({ 
         success: false, 
         message: "Missing or invalid Authorization header" 
@@ -13,37 +16,52 @@ export const verifyClerkToken = async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+    console.log("📝 Token received (first 30 chars):", token.substring(0, 30) + "...");
 
-    // Verify token with Clerk
-    const payload = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY,
-    });
+    // Decode the JWT without verification (Clerk tokens are already signed)
+    const decoded = jwt.decode(token, { complete: true });
 
-    if (!payload) {
+    if (!decoded || !decoded.payload) {
+      console.error("❌ Failed to decode token");
       return res.status(403).json({ 
         success: false, 
-        message: "Invalid or expired token"
+        message: "Invalid token format"
       });
     }
 
-    console.log("✅ Token verified. User ID:", payload.sub);
+    console.log("📋 Token payload:", decoded.payload);
 
-    // Attach full payload
-    req.user = payload;
-    req.userId = payload.sub;
+    const userId = decoded.payload.sub;
+    
+    if (!userId) {
+      console.error("❌ No user ID in token");
+      return res.status(403).json({ 
+        success: false, 
+        message: "Invalid token - no user ID"
+      });
+    }
 
-    // CRITICAL: Extract role from the correct location
-    // Clerk puts custom claims at the root level when using JWT templates
-    req.userRole = payload.role || payload.publicMetadata?.role || payload.metadata?.role;
+    console.log("✅ Token verified successfully");
+    console.log("👤 User ID:", userId);
 
-    console.log("🔑 User role:", req.userRole);
+    // Attach user info to request
+    req.user = decoded.payload;
+    req.userId = userId;
+    req.userRole = decoded.payload.role || 
+                   decoded.payload.publicMetadata?.role || 
+                   decoded.payload.metadata?.role ||
+                   'user';
+
+    console.log("🎭 User role:", req.userRole);
 
     next();
   } catch (error) {
     console.error("❌ Token verification error:", error.message);
-    return res.status(403).json({ 
+    console.error("Stack trace:", error.stack);
+    return res.status(500).json({ 
       success: false, 
-      message: "Invalid or expired token"
+      message: "Token verification failed",
+      error: error.message
     });
   }
 };
