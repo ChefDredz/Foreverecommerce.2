@@ -24,11 +24,8 @@ const EditProductModal = ({ product, onClose, onUpdate }) => {
   });
 
   const [loading, setLoading] = useState(false);
-  // ✅ FIX: Use the correct backend URL
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://foreverecommerce-2.onrender.com";
   const { getToken } = useAuth();
-
-  console.log("🔗 Backend URL:", backendUrl); // Debug log
 
   // Handle input changes
   const handleChange = (e) => {
@@ -249,6 +246,10 @@ const EditProductModal = ({ product, onClose, onUpdate }) => {
                   src={img}
                   alt={`Product ${index + 1}`}
                   className="current-image"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/100?text=Image';
+                    console.warn(`Failed to load image: ${img}`);
+                  }}
                 />
               ))}
             </div>

@@ -17,14 +17,19 @@ const List = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://foreverecommerce-2.onrender.com";
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL ||
+    "https://foreverecommerce-2.onrender.com";
   const { getToken } = useAuth();
 
   // ✅ FIX: Use GET request (no auth) for listing products
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log("📋 Fetching products from:", `${backendUrl}/api/product/list`);
+      console.log(
+        "📋 Fetching products from:",
+        `${backendUrl}/api/product/list`
+      );
 
       // ✅ Use GET request (public endpoint, no auth needed)
       const response = await axios.get(`${backendUrl}/api/product/list`);
@@ -54,10 +59,10 @@ const List = () => {
 
     try {
       console.log("🗑️ Deleting product:", id);
-      
+
       // Get Clerk token for admin operations
       const token = await getToken({ template: "MilikiAPI" });
-      
+
       if (!token) {
         toast.error("Authentication required. Please login again.");
         return;
@@ -299,6 +304,11 @@ const List = () => {
                       src={product.image[0]}
                       alt={product.name}
                       className="product-image"
+                      onError={(e) => {
+                        e.target.onerror = null; // Prevent infinite loop
+                        e.target.src =
+                          "https://via.placeholder.com/100x100/f1f3f5/6c757d?text=No+Image";
+                      }}
                     />
                   </td>
                   <td>
