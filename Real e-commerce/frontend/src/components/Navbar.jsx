@@ -4,6 +4,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import { SignInButton, SignedIn, SignedOut, UserButton, useAuth, useUser } from '@clerk/clerk-react';
 import { backendUrl } from '../config';
+import './Navbar.css'
 
 const Navbar = () => {
   const [visible, setVisible] = useState(false);
