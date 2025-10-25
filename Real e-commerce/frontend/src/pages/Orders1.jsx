@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import Title from "../components/Title";
 import "./Orders1.css";
 import { backendUrl } from "../config";
+import LiveTracking from "../components/LiveTracking";
+import { useAuth } from "@clerk/clerk-react";
 
 const Orders1 = () => {
   const { isSignedIn, user } = useUser();
@@ -14,6 +16,8 @@ const Orders1 = () => {
   const [trackingOrderId, setTrackingOrderId] = useState(null);
   const [payingOrderId, setPayingOrderId] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+
+
 
   // Fetch user's orders
   const fetchOrders = async () => {
@@ -318,11 +322,12 @@ const Orders1 = () => {
 
       {/* Tracking Modal */}
       {trackingOrderId && (
-        <TrackingModal
-          orderId={trackingOrderId}
-          onClose={closeTrackingModal}
-        />
-      )}
+  <LiveTracking
+    orderId={trackingOrderId}
+    onClose={closeTrackingModal}
+    getToken={getToken}  // Pass getToken as prop
+  />
+)}
     </div>
   );
 };

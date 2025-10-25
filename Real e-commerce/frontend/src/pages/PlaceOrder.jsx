@@ -6,14 +6,24 @@ import CartTotal from "../components/CartTotal";
 import { assets } from "../assets/frontend_assets/assets";
 import { ShopContext } from "../context/ShopContext";
 import { backendUrl } from "../config";
+import LocationPicker from "../components/LocationPicker";
 
 const PlaceOrder = () => {
   const { isSignedIn, user } = useUser();
   const { getToken } = useAuth();
-  const { cartItems, getCartAmount, delivery_fee, products, navigate, currency } = useContext(ShopContext);
+  const {
+    cartItems,
+    getCartAmount,
+    delivery_fee,
+    products,
+    navigate,
+    currency,
+  } = useContext(ShopContext);
 
   const [method, setMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // Delivery information state
   const [deliveryInfo, setDeliveryInfo] = useState({
@@ -25,7 +35,7 @@ const PlaceOrder = () => {
     state: "",
     zipcode: "",
     country: "",
-    phone: ""
+    phone: "",
   });
 
   if (!isSignedIn) {
@@ -35,21 +45,37 @@ const PlaceOrder = () => {
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setDeliveryInfo(prev => ({
+    setDeliveryInfo((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   // Validate delivery info
   const validateDeliveryInfo = () => {
-    const required = ['firstName', 'lastName', 'email', 'street', 'city', 'phone'];
+    const required = [
+      "firstName",
+      "lastName",
+      "email",
+      "street",
+      "city",
+      "phone",
+    ];
     for (let field of required) {
-      if (!deliveryInfo[field] || deliveryInfo[field].trim() === '') {
-        alert(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+      if (!deliveryInfo[field] || deliveryInfo[field].trim() === "") {
+        alert(
+          `Please fill in ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`
+        );
         return false;
       }
     }
+
+    // ✅ NEW: Validate location is selected
+    if (!selectedLocation) {
+      alert("📍 Please select your delivery location on the map");
+      return false;
+    }
+
     return true;
   };
 
@@ -69,7 +95,7 @@ const PlaceOrder = () => {
 
       setLoading(true);
       const token = await getToken({ template: "MilikiAPI" });
-      
+
       if (!token) {
         alert("⚠️ Could not get authentication token. Please sign in again.");
         setLoading(false);
@@ -78,13 +104,15 @@ const PlaceOrder = () => {
 
       // Format cart items to match your cart structure
       const formattedItems = [];
-      
+
       for (const itemId in cartItems) {
         for (const size in cartItems[itemId]) {
           if (cartItems[itemId][size] > 0) {
             // Find product data from products array
-            const productData = products.find(product => product._id === itemId);
-            
+            const productData = products.find(
+              (product) => product._id === itemId
+            );
+
             if (productData) {
               formattedItems.push({
                 productId: itemId,
@@ -92,7 +120,7 @@ const PlaceOrder = () => {
                 price: productData.price,
                 quantity: cartItems[itemId][size],
                 image: productData.image?.[0],
-                size: size
+                size: size,
               });
             }
           }
@@ -108,6 +136,7 @@ const PlaceOrder = () => {
       console.log("💰 Cart Amount:", cartAmount);
       console.log("🚚 Delivery Fee:", delivery_fee);
       console.log("💵 Total Amount:", totalAmount);
+      console.log("📍 Location:", selectedLocation);
 
       if (!totalAmount || totalAmount <= 0) {
         alert("⚠️ Cart total is invalid. Please add items to your cart.");
@@ -115,11 +144,17 @@ const PlaceOrder = () => {
         return;
       }
 
+      // ✅ NEW: Include location data in order
       const orderData = {
         products: formattedItems,
         totalAmount: totalAmount,
         paymentMethod: method,
-        deliveryInfo: deliveryInfo
+        deliveryInfo: {
+          ...deliveryInfo,
+          latitude: selectedLocation.lat,
+          longitude: selectedLocation.lng,
+          locationType: selectedLocation.type
+        },
       };
 
       console.log("📤 Sending order data:", orderData);
@@ -140,7 +175,9 @@ const PlaceOrder = () => {
         alert("✅ Order placed successfully!");
         navigate("/Orders1");
       } else {
-        alert("❌ Order placement failed: " + (data.message || "Unknown error"));
+        alert(
+          "❌ Order placement failed: " + (data.message || "Unknown error")
+        );
         console.error("❌ Server error details:", data);
       }
     } catch (error) {
@@ -159,83 +196,174 @@ const PlaceOrder = () => {
           <Title text1={"DELIVERY"} text2={"INFORMATION"} />
         </div>
         <div className="row-deliver">
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="firstName"
-            placeholder="First Name" 
+            placeholder="First Name"
             value={deliveryInfo.firstName}
             onChange={handleInputChange}
             required
           />
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="lastName"
-            placeholder="Last Name" 
+            placeholder="Last Name"
             value={deliveryInfo.lastName}
             onChange={handleInputChange}
             required
           />
         </div>
-        <input 
-          id="long-input" 
-          type="email" 
+        <input
+          id="long-input"
+          type="email"
           name="email"
-          placeholder="E-mail" 
+          placeholder="E-mail"
           value={deliveryInfo.email}
           onChange={handleInputChange}
           required
         />
-        <input 
-          id="long-input" 
-          type="text" 
+        <input
+          id="long-input"
+          type="text"
           name="street"
-          placeholder="Street" 
+          placeholder="Street"
           value={deliveryInfo.street}
           onChange={handleInputChange}
           required
         />
         <div className="row-deliver">
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="city"
-            placeholder="City" 
+            placeholder="City"
             value={deliveryInfo.city}
             onChange={handleInputChange}
             required
           />
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="state"
-            placeholder="State" 
+            placeholder="State"
             value={deliveryInfo.state}
             onChange={handleInputChange}
           />
         </div>
         <div className="row-deliver">
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="zipcode"
-            placeholder="Zipcode" 
+            placeholder="Zipcode"
             value={deliveryInfo.zipcode}
             onChange={handleInputChange}
           />
-          <input 
-            type="text" 
+          <input
+            type="text"
             name="country"
-            placeholder="Country" 
+            placeholder="Country"
             value={deliveryInfo.country}
             onChange={handleInputChange}
           />
         </div>
-        <input 
-          id="long-input" 
-          type="tel" 
+        <input
+          id="long-input"
+          type="tel"
           name="phone"
-          placeholder="Phone Number" 
+          placeholder="Phone Number"
           value={deliveryInfo.phone}
           onChange={handleInputChange}
           required
         />
+
+        {/* ✅ NEW: Location Picker Section */}
+        <div style={{ marginTop: '24px' }}>
+          <h3 style={{ 
+            fontSize: '16px', 
+            fontWeight: '600', 
+            marginBottom: '12px',
+            color: '#212529'
+          }}>
+            📍 Delivery Location
+          </h3>
+          <button 
+            type="button"
+            onClick={() => setShowLocationPicker(true)}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              backgroundColor: selectedLocation ? '#4CAF50' : '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+            onMouseOver={(e) => e.target.style.backgroundColor = '#45a049'}
+            onMouseOut={(e) => e.target.style.backgroundColor = '#4CAF50'}
+          >
+            {selectedLocation ? '✓ Location Selected - Change?' : '📍 Select Delivery Location'}
+          </button>
+          
+          {selectedLocation && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px',
+              backgroundColor: '#e8f5e9',
+              border: '2px solid #4CAF50',
+              borderRadius: '8px'
+            }}>
+              <p style={{
+                margin: '0 0 6px 0',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#2e7d32'
+              }}>
+                📍 {selectedLocation.address || 'Location selected'}
+              </p>
+              <small style={{
+                color: '#666',
+                fontSize: '12px',
+                fontFamily: 'monospace'
+              }}>
+                Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
+              </small>
+              <div style={{
+                marginTop: '6px',
+                padding: '4px 8px',
+                backgroundColor: '#c8e6c9',
+                borderRadius: '4px',
+                display: 'inline-block'
+              }}>
+                <small style={{ 
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#1b5e20',
+                  textTransform: 'uppercase'
+                }}>
+                  {selectedLocation.type === 'current' && '📱 Current Location'}
+                  {selectedLocation.type === 'pin' && '📌 Pin Location'}
+                  {selectedLocation.type === 'address' && '🔍 Searched Address'}
+                </small>
+              </div>
+            </div>
+          )}
+
+          {!selectedLocation && (
+            <p style={{
+              marginTop: '8px',
+              fontSize: '12px',
+              color: '#dc3545',
+              fontStyle: 'italic'
+            }}>
+              ⚠️ Please select your delivery location before placing order
+            </p>
+          )}
+        </div>
       </div>
 
       {/* RIGHT SIDE – Cart summary and payment */}
@@ -273,12 +401,29 @@ const PlaceOrder = () => {
           <button
             id="place-order-btn"
             onClick={handlePlaceOrder}
-            disabled={loading}
+            disabled={loading || !selectedLocation}
+            style={{
+              opacity: (!selectedLocation || loading) ? 0.6 : 1,
+              cursor: (!selectedLocation || loading) ? 'not-allowed' : 'pointer'
+            }}
           >
             {loading ? "Processing..." : "PLACE ORDER"}
           </button>
         </div>
       </div>
+
+      {/* ✅ NEW: Location Picker Modal */}
+      {showLocationPicker && (
+        <LocationPicker
+          onLocationSelect={(location) => {
+            setSelectedLocation(location);
+            setShowLocationPicker(false);
+            console.log("📍 Location selected:", location);
+          }}
+          onClose={() => setShowLocationPicker(false)}
+          initialLocation={selectedLocation}
+        />
+      )}
     </div>
   );
 };
