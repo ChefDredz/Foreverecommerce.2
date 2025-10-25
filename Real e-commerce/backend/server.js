@@ -6,6 +6,7 @@ import connectCloudinary from "./config/cloudinary.js";
 import userRouter from "./routes/UserRoute.js";
 import productRouter from "./routes/ProductRoute.js";
 import orderRouter from "./routes/OrderRoute.js";
+import trackingRouter from "./routes/TrackingRoute.js";
 
 // App Config
 const app = express();
@@ -55,6 +56,7 @@ app.use((req, res, next) => {
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
 app.use("/api/orders", orderRouter);
+app.use("/api/tracking", trackingRouter);
 
 // Health check endpoint
 app.get("/", (req, res) => {

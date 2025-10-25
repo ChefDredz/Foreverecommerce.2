@@ -22,12 +22,20 @@ const orderSchema = new mongoose.Schema(
       city: String,
       state: String,
       zipcode: String,
-      country: String
+      country: String,
+      // ✅ NEW: GPS coordinates for delivery
+      latitude: Number,
+      longitude: Number,
+      locationType: {
+        type: String,
+        enum: ['pin', 'current', 'address'],
+        default: 'address'
+      }
     },
     items: [
       {
         productId: { 
-          type: String, // CHANGED from ObjectId to String
+          type: String,
           required: true
         },
         name: {
@@ -71,6 +79,41 @@ const orderSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    
+    // ✅ NEW: Tracking & Driver Information
+    driverName: {
+      type: String
+    },
+    driverPhone: {
+      type: String
+    },
+    vehicleNumber: {
+      type: String
+    },
+    deliveryLocation: {
+      lat: Number,
+      lng: Number
+    },
+    warehouseLocation: {
+      lat: Number,
+      lng: Number
+    },
+    currentDriverLocation: {
+      latitude: Number,
+      longitude: Number,
+      timestamp: Date
+    },
+    estimatedDeliveryTime: {
+      type: Number // in minutes
+    },
+    actualDeliveryTime: {
+      type: Date
+    },
+    trackingEnabled: {
+      type: Boolean,
+      default: false
+    },
+    
     // M-Pesa payment fields
     mpesaCheckoutRequestId: {
       type: String
@@ -99,6 +142,7 @@ const orderSchema = new mongoose.Schema(
 // Index for faster queries
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ status: 1 });
+orderSchema.index({ trackingEnabled: 1, status: 1 }); // ✅ NEW: For tracking queries
 
 const Order = mongoose.model("Order", orderSchema);
 export default Order;
