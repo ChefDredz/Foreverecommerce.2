@@ -5,7 +5,7 @@ import Title from "../components/Title";
 import "./Orders1.css";
 import { backendUrl } from "../config";
 import LiveTracking from "../components/LiveTracking";
-import { useAuth } from "@clerk/clerk-react";
+
 
 const Orders1 = () => {
   const { isSignedIn, user } = useUser();
