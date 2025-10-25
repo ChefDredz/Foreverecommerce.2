@@ -70,7 +70,7 @@ const PlaceOrder = () => {
       }
     }
 
-    // ✅ NEW: Validate location is selected
+    // Validate location is selected
     if (!selectedLocation) {
       alert("📍 Please select your delivery location on the map");
       return false;
@@ -79,7 +79,7 @@ const PlaceOrder = () => {
     return true;
   };
 
-  // Submit handler
+  // Submit handler - FIXED to handle undefined products safely
   const handlePlaceOrder = async () => {
     try {
       // Validate delivery info
@@ -93,6 +93,12 @@ const PlaceOrder = () => {
         return;
       }
 
+      // Check if products are loaded
+      if (!products || products.length === 0) {
+        alert("⚠️ Products are still loading. Please wait a moment.");
+        return;
+      }
+
       setLoading(true);
       const token = await getToken({ template: "MilikiAPI" });
 
@@ -102,7 +108,7 @@ const PlaceOrder = () => {
         return;
       }
 
-      // Format cart items to match your cart structure
+      // Format cart items to match your cart structure - SAFELY HANDLE UNDEFINED
       const formattedItems = [];
 
       for (const itemId in cartItems) {
@@ -113,18 +119,26 @@ const PlaceOrder = () => {
               (product) => product._id === itemId
             );
 
-            if (productData) {
+            if (productData && productData.price !== undefined) {
               formattedItems.push({
                 productId: itemId,
-                name: productData.name,
-                price: productData.price,
+                name: productData.name || "Product",
+                price: productData.price || 0,
                 quantity: cartItems[itemId][size],
-                image: productData.image?.[0],
+                image: productData.image?.[0] || "/placeholder.png",
                 size: size,
               });
+            } else {
+              console.warn(`⚠️ Product ${itemId} not found or has no price`);
             }
           }
         }
+      }
+
+      if (formattedItems.length === 0) {
+        alert("⚠️ Could not process cart items. Please try again.");
+        setLoading(false);
+        return;
       }
 
       console.log("📦 Formatted items:", formattedItems);
@@ -144,7 +158,7 @@ const PlaceOrder = () => {
         return;
       }
 
-      // ✅ NEW: Include location data in order
+      // Include location data in order
       const orderData = {
         products: formattedItems,
         totalAmount: totalAmount,
@@ -187,6 +201,9 @@ const PlaceOrder = () => {
       setLoading(false);
     }
   };
+
+  // Check if products are loaded
+  const productsLoaded = products && products.length > 0;
 
   return (
     <div className="place-holder-container">
@@ -274,8 +291,8 @@ const PlaceOrder = () => {
           required
         />
 
-        {/* ✅ NEW: Location Picker Section */}
-        <div style={{ marginTop: '24px' }}>
+        {/* Location Picker Section */}
+        <div style={{ marginTop: '24px', width: '32vw' }}>
           <h3 style={{ 
             fontSize: '16px', 
             fontWeight: '600', 
@@ -290,7 +307,7 @@ const PlaceOrder = () => {
             style={{
               width: '100%',
               padding: '14px 20px',
-              backgroundColor: selectedLocation ? '#4CAF50' : '#4CAF50',
+              backgroundColor: selectedLocation ? '#4CAF50' : '#667eea',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
@@ -303,8 +320,8 @@ const PlaceOrder = () => {
               justifyContent: 'center',
               gap: '8px'
             }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#45a049'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#4CAF50'}
+            onMouseOver={(e) => e.target.style.backgroundColor = selectedLocation ? '#45a049' : '#5568d3'}
+            onMouseOut={(e) => e.target.style.backgroundColor = selectedLocation ? '#4CAF50' : '#667eea'}
           >
             {selectedLocation ? '✓ Location Selected - Change?' : '📍 Select Delivery Location'}
           </button>
@@ -398,21 +415,35 @@ const PlaceOrder = () => {
             </div>
           </div>
 
+          {/* Show warning if products not loaded */}
+          {!productsLoaded && (
+            <div style={{
+              marginTop: '12px',
+              padding: '10px',
+              backgroundColor: '#fff3cd',
+              border: '1px solid #ffc107',
+              borderRadius: '6px',
+              textAlign: 'center'
+            }}>
+              <small style={{ color: '#856404' }}>⏳ Loading products...</small>
+            </div>
+          )}
+
           <button
             id="place-order-btn"
             onClick={handlePlaceOrder}
-            disabled={loading || !selectedLocation}
+            disabled={loading || !selectedLocation || !productsLoaded}
             style={{
-              opacity: (!selectedLocation || loading) ? 0.6 : 1,
-              cursor: (!selectedLocation || loading) ? 'not-allowed' : 'pointer'
+              opacity: (!selectedLocation || loading || !productsLoaded) ? 0.6 : 1,
+              cursor: (!selectedLocation || loading || !productsLoaded) ? 'not-allowed' : 'pointer'
             }}
           >
-            {loading ? "Processing..." : "PLACE ORDER"}
+            {loading ? "Processing..." : !productsLoaded ? "Loading..." : "PLACE ORDER"}
           </button>
         </div>
       </div>
 
-      {/* ✅ NEW: Location Picker Modal */}
+      {/* Location Picker Modal */}
       {showLocationPicker && (
         <LocationPicker
           onLocationSelect={(location) => {

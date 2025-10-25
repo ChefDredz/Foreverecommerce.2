@@ -10,7 +10,7 @@ const LiveTracking = ({ orderId, onClose, getToken }) => {
   const destinationMarkerRef = useRef(null);
 
   const backendUrl = 'https://foreverecommerce-2.onrender.com';
-  const mapboxToken = 'pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example'; // Replace with your token
+  const mapboxToken = 'pk.eyJ1IjoiY2hlZmRyZWR6IiwiYSI6ImNtaDYyN2VkazBidjMydnNkeGhvM204YnQifQ.xh00h0xVjc5v7VV5bD3WQw'; // Replace with your token
 
   // Load Mapbox
   useEffect(() => {

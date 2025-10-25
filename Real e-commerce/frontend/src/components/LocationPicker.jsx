@@ -10,7 +10,7 @@ const LocationPicker = ({ onLocationSelect, onClose, initialLocation }) => {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
 
-  const mapboxToken = 'pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example'; // Replace with your Mapbox token
+  const mapboxToken = 'pk.eyJ1IjoiY2hlZmRyZWR6IiwiYSI6ImNtaDYyN2VkazBidjMydnNkeGhvM204YnQifQ.xh00h0xVjc5v7VV5bD3WQw'; // Replace with your Mapbox token
 
   useEffect(() => {
     loadMapbox();
