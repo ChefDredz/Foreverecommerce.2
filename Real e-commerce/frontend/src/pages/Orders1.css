@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
-  min-height: 100vh;
+  min-height: 40vh;
 }
 
 .header-text-holder {
@@ -23,6 +23,7 @@
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
   transition: all 0.3s ease;
+  height: 40vh;
 }
 
 .order-box:hover {
