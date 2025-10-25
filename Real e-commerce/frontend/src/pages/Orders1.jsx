@@ -131,7 +131,7 @@ const Orders1 = () => {
 
       if (data.success) {
         toast.success('Order cancelled successfully');
-        fetchOrders(); // Refresh orders
+        fetchOrders();
       } else {
         toast.error(data.message || 'Failed to cancel order');
       }
@@ -207,7 +207,7 @@ const Orders1 = () => {
         return (
           <div key={order._id || index} className={`order-box-container ${isCancelled ? 'cancelled-order' : ''}`}>
             <div className="order-box">
-              {/* Order Header */}
+              {/* Order Header with Gradient */}
               <div className="order-header">
                 <div className="order-id">Order #{order._id.slice(-8).toUpperCase()}</div>
                 <div className={`payment-status-badge ${order.paymentStatus?.toLowerCase()}`}>
@@ -215,90 +215,102 @@ const Orders1 = () => {
                 </div>
               </div>
 
-              <div className="order-details">
-                <img
-                  src={order.items?.[0]?.image || "/placeholder.png"}
-                  alt={order.items?.[0]?.name || "Product"}
-                />
-                <div className="order-details-mini">
-                  <p id="Order-name">{order.items?.[0]?.name}</p>
-                  {order.items?.length > 1 && (
-                    <p className="more-items">+{order.items.length - 1} more item(s)</p>
+              <div className="order-content">
+                {/* Order Details */}
+                <div className="order-details">
+                  <img
+                    src={order.items?.[0]?.image || "/placeholder.png"}
+                    alt={order.items?.[0]?.name || "Product"}
+                  />
+                  <div className="order-details-mini">
+                    <p id="Order-name">{order.items?.[0]?.name}</p>
+                    {order.items?.length > 1 && (
+                      <p className="more-items">+{order.items.length - 1} more item(s)</p>
+                    )}
+                    <p><strong>💰 Total:</strong> KES {order.totalAmount?.toLocaleString()}</p>
+                    <p><strong>📦 Status:</strong> <b className={isCancelled ? 'cancelled-status' : ''}>{order.status}</b></p>
+                    <p>
+                      <strong>📅 Date:</strong>{" "}
+                      <span className="order-date">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </span>
+                    </p>
+                    <p className="payment-method-text">
+                      💳 Payment: {order.paymentMethod?.toUpperCase() || 'COD'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Tracker */}
+                {!isCancelled && (
+                  <div className="status-tracker">
+                    <div className={`step ${progress >= 1 ? "done" : ""}`}>
+                      <span className="step-icon">🛒</span>
+                      <span>Order Received</span>
+                    </div>
+                    <div className={`step ${progress >= 2 ? "done" : ""}`}>
+                      <span className="step-icon">📦</span>
+                      <span>Cargo Packed</span>
+                    </div>
+                    <div className={`step ${progress >= 3 ? "done" : ""}`}>
+                      <span className="step-icon">🚚</span>
+                      <span>On Route</span>
+                    </div>
+                    <div className={`step ${progress >= 4 ? "done" : ""}`}>
+                      <span className="step-icon">✅</span>
+                      <span>Delivered</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="order-actions">
+                  {/* Track Order */}
+                  {order.status === "Cargo on Route" && !isCancelled && (
+                    <button
+                      className="track-order-btn modern-btn"
+                      onClick={() => handleTrackOrder(order._id)}
+                    >
+                      <span>🚀</span>
+                      <span>TRACK ORDER</span>
+                    </button>
                   )}
-                  <p>Total: KES {order.totalAmount?.toLocaleString()}</p>
-                  <p>Status: <b className={isCancelled ? 'cancelled-status' : ''}>{order.status}</b></p>
-                  <p>
-                    Date:{" "}
-                    <span className="order-date">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </span>
-                  </p>
-                  <p className="payment-method-text">
-                    Payment: {order.paymentMethod?.toUpperCase() || 'COD'}
-                  </p>
+
+                  {/* Pay with M-Pesa */}
+                  {order.paymentStatus === 'Pending' && order.paymentMethod === 'm-pesa' && !isCancelled && (
+                    <button
+                      className="pay-mpesa-btn modern-btn"
+                      onClick={() => handlePayWithMpesa(order)}
+                      disabled={payingOrderId === order._id}
+                    >
+                      <span>💳</span>
+                      <span>{payingOrderId === order._id ? 'Processing...' : 'Pay with M-Pesa'}</span>
+                    </button>
+                  )}
+
+                  {/* Cancel Order */}
+                  {order.cancellable && !isCancelled && (
+                    <button
+                      className="cancel-order-btn modern-btn"
+                      onClick={() => handleCancelOrder(order._id)}
+                      disabled={cancellingOrderId === order._id}
+                    >
+                      <span>❌</span>
+                      <span>{cancellingOrderId === order._id ? 'Cancelling...' : 'Cancel Order'}</span>
+                    </button>
+                  )}
                 </div>
-              </div>
 
-              {!isCancelled && (
-                <div className="status-tracker">
-                  <div className={`step ${progress >= 1 ? "done" : ""}`}>
-                    🛒 <span>Order Received</span>
+                {/* Receipt */}
+                {order.paymentStatus === 'Paid' && order.mpesaReceiptNumber && (
+                  <div className="receipt-info">
+                    <p className="receipt-number">
+                      <span>📄</span>
+                      <span>Receipt: {order.mpesaReceiptNumber}</span>
+                    </p>
                   </div>
-                  <div className={`step ${progress >= 2 ? "done" : ""}`}>
-                    📦 <span>Cargo Packed</span>
-                  </div>
-                  <div className={`step ${progress >= 3 ? "done" : ""}`}>
-                    🚚 <span>On Route</span>
-                  </div>
-                  <div className={`step ${progress >= 4 ? "done" : ""}`}>
-                    ✅ <span>Delivered</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="order-actions">
-                {/* Track Order */}
-                {order.status === "Cargo on Route" && !isCancelled && (
-                  <button
-                    className="track-order-btn"
-                    onClick={() => handleTrackOrder(order._id)}
-                  >
-                    🚀 TRACK ORDER
-                  </button>
-                )}
-
-                {/* Pay with M-Pesa */}
-                {order.paymentStatus === 'Pending' && order.paymentMethod === 'm-pesa' && !isCancelled && (
-                  <button
-                    className="pay-mpesa-btn"
-                    onClick={() => handlePayWithMpesa(order)}
-                    disabled={payingOrderId === order._id}
-                  >
-                    {payingOrderId === order._id ? 'Processing...' : '💳 Pay with M-Pesa'}
-                  </button>
-                )}
-
-                {/* Cancel Order */}
-                {order.cancellable && !isCancelled && (
-                  <button
-                    className="cancel-order-btn"
-                    onClick={() => handleCancelOrder(order._id)}
-                    disabled={cancellingOrderId === order._id}
-                  >
-                    {cancellingOrderId === order._id ? 'Cancelling...' : '❌ Cancel Order'}
-                  </button>
                 )}
               </div>
-
-              {/* Receipt */}
-              {order.paymentStatus === 'Paid' && order.mpesaReceiptNumber && (
-                <div className="receipt-info">
-                  <p className="receipt-number">
-                    📄 Receipt: {order.mpesaReceiptNumber}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         );
@@ -315,7 +327,7 @@ const Orders1 = () => {
   );
 };
 
-// Tracking Modal Component
+// Enhanced Tracking Modal Component
 const TrackingModal = ({ orderId, onClose }) => {
   const [animationProgress, setAnimationProgress] = useState(0);
 

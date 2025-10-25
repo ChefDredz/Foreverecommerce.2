@@ -61,6 +61,7 @@ a.active hr {
     width: 30px;
     height: 30px;
     cursor: pointer;
+    color: #fff;
 }
 
 .search {
