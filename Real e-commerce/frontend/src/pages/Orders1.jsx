@@ -246,7 +246,7 @@ const Orders1 = () => {
                   <div className="status-tracker">
                     <div className={`step ${progress >= 1 ? "done" : ""}`}>
                       <span className="step-icon">🛒</span>
-                      <span>Order Received</span>
+                      <span id="status-statement">Order Received</span>
                     </div>
                     <div className={`step ${progress >= 2 ? "done" : ""}`}>
                       <span className="step-icon">📦</span>
