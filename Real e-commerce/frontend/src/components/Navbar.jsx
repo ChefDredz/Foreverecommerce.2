@@ -123,7 +123,7 @@ const Navbar = () => {
           <div className="nav-icon-wrapper profile-wrapper">
             <SignedOut>
               <SignInButton mode="modal">
-                <img src={assets.profile_icon} alt="Profile" className="nav-icon" />
+                {/* <img id='user-image' src={assets.profile_icon} alt="Profile" className="nav-icon" /> */}
               </SignInButton>
             </SignedOut>
             <SignedIn>
