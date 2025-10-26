@@ -14,33 +14,46 @@ const Cart = () => {
     // Wait for products to load
     if (!products || products.length === 0) {
       console.log("⏳ Waiting for products to load...");
+      setIsProcessing(true)
       return;
     }
 
     try {
       const tempData = []
-      for (const items in cartItems) {
-        for (const item in cartItems[items]) {
-          if (cartItems[items][item] > 0) {
-            // Verify product exists before adding
-            const productExists = products.find(p => p._id === items)
-            if (productExists) {
-              tempData.push({
-                _id: items,
-                size: item,
-                quantity: cartItems[items][item]
-              })
-            } else {
-              console.warn(`⚠️ Product ${items} not found, skipping`);
+      
+      // Only process if cartItems exists
+      if (cartItems && typeof cartItems === 'object') {
+        for (const itemId in cartItems) {
+          if (cartItems[itemId] && typeof cartItems[itemId] === 'object') {
+            for (const size in cartItems[itemId]) {
+              const quantity = cartItems[itemId][size]
+              
+              // Check if quantity is valid and greater than 0
+              if (quantity && quantity > 0) {
+                // Verify product exists before adding
+                const productExists = products.find(p => p._id === itemId)
+                
+                if (productExists && productExists.price !== undefined) {
+                  tempData.push({
+                    _id: itemId,
+                    size: size,
+                    quantity: quantity
+                  })
+                } else {
+                  console.warn(`⚠️ Product ${itemId} not found or missing price, skipping`);
+                }
+              }
             }
           }
         }
       }
-      console.log("🛒 Cart data:", tempData);
+      
+      console.log("🛒 Cart data processed:", tempData);
       setCartdata(tempData)
       setIsProcessing(false)
     } catch (error) {
       console.error("❌ Error processing cart:", error)
+      setCartdata([])
       setIsProcessing(false)
     }
   }, [cartItems, products])
@@ -99,19 +112,29 @@ const Cart = () => {
             return null;
           }
 
-          // Additional safety checks
-          const productImage = productData.image?.[0] || '/placeholder.png'
+          // Additional safety checks with fallbacks
+          const productImage = (productData.image && Array.isArray(productData.image) && productData.image.length > 0) 
+            ? productData.image[0] 
+            : '/placeholder.png'
+          
           const productName = productData.name || 'Unknown Product'
-          const productPrice = productData.price || 0
+          const productPrice = productData.price !== undefined ? productData.price : 0
+
+          // Skip if price is still invalid
+          if (productPrice === 0) {
+            console.warn(`⚠️ Product ${productName} has no valid price`);
+            return null;
+          }
 
           return (
-            <div key={index} className="cart-item-holder">
+            <div key={`${item._id}-${item.size}-${index}`} className="cart-item-holder">
               <div className="cart-box">
                 <img 
                   className='cart-item-img' 
                   src={productImage}
                   alt={productName}
                   onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
                     e.target.src = '/placeholder.png'
                   }}
                 />
@@ -129,16 +152,26 @@ const Cart = () => {
               <div className="cart-quantity-control">
                 <button 
                   className="qty-btn"
-                  onClick={() => updateQuantity(item._id, item.size, Math.max(1, item.quantity - 1))}
+                  onClick={() => {
+                    try {
+                      updateQuantity(item._id, item.size, Math.max(1, item.quantity - 1))
+                    } catch (error) {
+                      console.error('Error updating quantity:', error)
+                    }
+                  }}
                   aria-label="Decrease quantity"
                 >
                   −
                 </button>
                 <input 
                   onChange={(e) => {
-                    const value = Number(e.target.value);
-                    if (value > 0) {
-                      updateQuantity(item._id, item.size, value);
+                    try {
+                      const value = Number(e.target.value);
+                      if (value > 0) {
+                        updateQuantity(item._id, item.size, value);
+                      }
+                    } catch (error) {
+                      console.error('Error updating quantity:', error)
                     }
                   }} 
                   className='cart-input' 
@@ -149,7 +182,13 @@ const Cart = () => {
                 />
                 <button 
                   className="qty-btn"
-                  onClick={() => updateQuantity(item._id, item.size, item.quantity + 1)}
+                  onClick={() => {
+                    try {
+                      updateQuantity(item._id, item.size, item.quantity + 1)
+                    } catch (error) {
+                      console.error('Error updating quantity:', error)
+                    }
+                  }}
                   aria-label="Increase quantity"
                 >
                   +
@@ -164,7 +203,15 @@ const Cart = () => {
               </div>
 
               <button 
-                onClick={() => updateQuantity(item._id, item.size, 0)} 
+                onClick={() => {
+                  try {
+                    if (window.confirm('Remove this item from cart?')) {
+                      updateQuantity(item._id, item.size, 0)
+                    }
+                  } catch (error) {
+                    console.error('Error removing item:', error)
+                  }
+                }} 
                 className='cart-remove-btn'
                 aria-label="Remove item"
                 title="Remove from cart"
@@ -183,7 +230,13 @@ const Cart = () => {
         <div className="cart-total-section">
           <CartTotal />
           <button 
-            onClick={() => navigate('/place-order')} 
+            onClick={() => {
+              try {
+                navigate('/place-order')
+              } catch (error) {
+                console.error('Navigation error:', error)
+              }
+            }} 
             className="checkout-btn"
           >
             <span>PROCEED TO CHECKOUT</span>
